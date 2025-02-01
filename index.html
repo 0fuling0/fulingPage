@@ -4,161 +4,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>
-        if (location.hostname !== 'localhost' && location.protocol !== 'file:') {
-            document.head.insertAdjacentHTML('beforeend', '<base href="/home/">');
-        }
-    </script>
     <meta name="theme-color" id="theme-color-meta" content="">
-    <meta name="description" content="Fuling Chen - 个人主页">
-    <title>Fuling Chen - 个人主页</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/aplayer/1.10.1/APlayer.min.css" />
+    <meta name="description" content="">
+    <meta name="color-scheme" content="light dark">
+    <title>loading...</title>
+    
+    <!-- 预连接外部资源 -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://gcore.jsdelivr.net">
+    
+    <!-- 核心样式 -->
+    <link rel="stylesheet" href="main.css">
     <link rel="icon" type="image/webp" sizes="64x64"
         href="https://gcore.jsdelivr.net/gh/0fuling0/mysource@main/img/favicon.webp">
-    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/twikoo@1.6.40/dist/twikoo.all.min.js"></script>
-    <script defer src="https://cdn.bootcdn.net/ajax/libs/aplayer/1.10.1/APlayer.min.js"></script>
-    <script defer src="https://unpkg.com/meting@2/dist/Meting.min.js"></script>
-    <script async src="https://npm.elemecdn.com/penndu@1.0.0/bsz.js"></script>
+    
+    <!-- 延迟加载的外部资源 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css" media="print" onload="this.media='all'">
+    
+    <!-- 延迟加载的脚本 -->
+    <script defer src="https://cdn.jsdelivr.net/npm/twikoo@1.6.41/dist/twikoo.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js"></script>
+    
+    <!-- 暗色模式早期初始化 -->
+    <script>
+        (function() {
+            const h = document.documentElement;
+            const d = localStorage.getItem('darkMode');
+            const p = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isDark = d !== null ? d === 'true' : p;
+            h.classList.add(isDark ? 'dark-mode' : 'light');
+        })();
+        // 路径修正
+        let path = window.location.pathname;
+        if (!path.endsWith('/') && path !== '/index.html' && !path.includes('.')) {
+            window.location.href = path + '/' + window.location.hash;
+        }
+    </script>
+    <script defer src="main.js"></script>
 </head>
 
-<body class="light">
+<body>
     <div class="loading-container">
-        <div class="loading-spinner-wrapper">
-            <div class="loading-spinner"></div>
-            <div class="loading-text"></div>
+        <div class="loading-animation">
+            <div class="circle"></div>
+            <div class="circle"></div>
+            <div class="circle"></div>
+            <div class="shadow"></div>
+            <div class="shadow"></div>
+            <div class="shadow"></div>
         </div>
     </div>
-
     <header>
-        <h1>Fuling's Homepage</h1>
-        <p class="motto">休言万事转头空，未转头时皆梦。</p>
-        <a href="https://www.fuling.me/"><i class="fa-solid fa-blog"></i>博客</a>
-        <a href="#home" onclick="showSection('homepage')"><i class="fa-solid fa-house"></i>主页</a>
-        <a href="#nav" onclick="showSection('navpage')"><i class="fa-solid fa-compass"></i>导航</a>
+        <div class="header-content">
+            <div class="header-brand">
+                <h1></h1>
+                <p class="motto"></p>
+            </div>
+            <div class="header-nav-wrapper">
+                <nav id="headerLinks" class="header-nav" role="navigation" aria-label="主导航"></nav>
+                <button id="darkModeToggle" class="header-dark-toggle" onclick="toggleDarkMode()" aria-label="切换暗色模式" title="切换暗色模式">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+        <div class="header-indicator"></div>
     </header>
 
     <main class="container">
         <section id="homepage">
-            <section class="card">
-                <div class="clock"></div>
-                <div class="hitokoto-container"></div>
-            </section>
-
-            <section class="card profile">
-                <img src="https://gcore.jsdelivr.net/gh/0fuling0/source@main/img/avatar.webp" alt="头像">
-                <div class="profile-info">
-                    <h2>Fuling Chen</h2>
-                    <p>@迷宫猫</p>
-                </div>
-                <div class="buttons">
-                    <a href="https://space.bilibili.com/620545781" target="_blank" class="button follow-button">
-                        <i class="fas fa-heart"></i> 关 注
-                    </a>
-                    <a href="https://message.bilibili.com/?spm_id_from=333.999.0.0#/whisper/mid620545781"
-                        target="_blank" class="button message-button">
-                        <i class="fas fa-envelope"></i> 消 息
-                    </a>
-                </div>
-            </section>
-
-            <section class="card">
-                <h3><i class="fas fa-info-circle"></i> 关于我</h3><br>
-                <p>这个人保持低调，热爱简单生活。对于各种事物持平和态度，注重个人空间和独立思考。喜欢追求兴趣爱好，追求内心宁静和平衡。</p>
-            </section>
-
-            <section class="card about">
-                <h3><i class="fas fa-id-card"></i> 个人信息</h3><br>
-                <ul>
-                    <li>姓名: Fuling Chen</li>
-                    <li>职业: ？？？</li>
-                    <li>简介: 似乎没什么可说的。</li><br>
-                </ul>
-            </section>
-
-            <section class="card projects">
-                <h3><i class="fas fa-laptop-code"></i> 个人项目</h3><br>
-                <ul class="project-list">
-                    <li class="project">
-                        <a href="https://www.fuling.me/home/">
-                            <i class="fab fa-github"></i>
-                            <span>个人主页</span>
-                        </a>
-                        <p>项目描述: 具备加载效果、背景图轮播、PWA支持、深色模式、时钟、一言格言轮播以及响应式布局的卡片式个人主页。</p>
-                    </li>
-                    <li class="project">
-                        <a href="https://www.fuling.me/">
-                            <i class="fas fa-desktop"></i>
-                            <span>个人博客</span>
-                        </a>
-                        <p>项目描述: 简单的Hexo博客，使用volantis主题。</p>
-                    </li>
-                </ul>
-            </section>
-
-            <section class="card">
-                <h3><i class="fa-regular fa-image"></i> 图片展示</h3><br><br>
-                <div class="carousel-card">
-                    <button class="next-btn" onclick="nextSlide()">❯</button>
-                    <button class="prev-btn" onclick="prevSlide()">❮</button>
-                    <div class="carousel-container">
-                        <img class="carousel-img">
-                    </div>
-                </div>
-            </section>
-
-            <section class="card about">
-                <h3><i class="fas fa-graduation-cap"></i> 教育背景</h3><br>
-                <ul>
-                    <li>大学: 合肥工业大学</li>
-                    <li>专业: 给排水科学与工程</li>
-                    <li>年份: 2021 - 至今</li>
-                </ul>
-            </section>
-
-            <section class="card contact">
-                <h3><i class="fas fa-address-card"></i> 联系方式</h3><br>
-                <div class="contact-options">
-                    <a href="mailto:chen@fuling.me">
-                        <i class="fas fa-at"></i>
-                        <span>电子邮件</span><br>
-                    </a>
-                    <a href="https://github.com/0fuling0" target="_blank">
-                        <i class="fab fa-github"></i>
-                        <span>Github</span><br>
-                    </a>
-                    <a href="https://space.bilibili.com/620545781" target="_blank">
-                        <i class="fab fa-bilibili"></i>
-                        <span>Bilibili</span>
-                    </a>
-                </div>
-            </section>
-
-            <section class="card about">
-                <h3><i class="fa-solid fa-award"></i> 网站信息</h3><br>
-                <ul>
-                    <li><strong>本站总访问量：</strong><span id="busuanzi_value_site_pv"></span> 次</li>
-                    <li><strong>本站总访客数：</strong><span id="busuanzi_value_site_uv"></span> 人</li>
-                    <li>
-                        <div id="runtime-info-container"></div>
-                    </li>
-                </ul>
-            </section>
-
-            <section class="card music">
-                <h3><i class="fas fa-music"></i> 音乐</h3>
-                <br><br>
-                <div id="aplayer">
-                    <meting-js id="8297186297" server="netease" type="playlist" mutex="true" preload="auto"
-                        order="random"></meting-js>
-                </div>
-            </section>
-
-            <section class="card">
-                <h3><i class='fa-solid fa-comments'></i> 留言</h3><br>
-                <div id="tcomment"></div>
-            </section>
         </section>
 
         <section id="navpage" style="display:none;">
@@ -183,7 +100,7 @@
                     </div>
                     <input type="text" class="search-input" placeholder="输入搜索词">
                     <button class="search-button" onclick="search()"><i
-                            class="fa-solid fa-magnifying-glass"></i> </button>
+                            class="fa-solid fa-magnifying-glass"></i> </button>
                 </div>
 
                 <div class="cardContainer">
@@ -199,15 +116,31 @@
     </main>
 
     <footer>
-        <p>© 2024 Fuling Chen. All rights reserved.</p>
+        <div class="footer-content">
+            <div class="footer-info">
+                <p class="copyright"></p>
+                <p class="runtime">✨ 网站已运行 <span id="footer-runtime">0</span> 天</p>
+            </div>
+            <div class="footer-links">
+               <a href="https://www.fuling.cloudns.org/" aria-label="博客" target="_blank">
+                    <i class="fa-solid fa-blog"></i>
+                </a>               
+                <a href="#home" onclick="showSection('homepage'); return false;" aria-label="主页">
+                    <i class="fas fa-home"></i>
+                </a>
+                <a href="#nav" onclick="showSection('navpage'); return false;" aria-label="导航">
+                    <i class="fas fa-compass"></i>
+                </a>
+                <a href="#" onclick="toggleDarkMode(); return false;" aria-label="切换暗色模式">
+                    <i class="fas fa-moon" id="footerDarkIcon"></i>
+                </a>
+                <a href="#" onclick="scrollToTop(); return false;" aria-label="返回顶部">
+                    <i class="fas fa-arrow-up"></i>
+                </a>
+            </div>
+        </div>
     </footer>
 
-    <button id="backToTop" class="back-to-top-button" aria-label="返回顶部"><i class="fas fa-arrow-up"></i></button>
-    <button id="backToBottom" class="back-to-bottom-button" aria-label="返回底部"><i class="fas fa-arrow-down"></i></button>
-    <button id="darkModeToggle" class="dark-mode-toggle" onclick="toggleDarkMode()" aria-label="切换夜间模式"><i class="fas fa-moon"></i></button>
-
-    <script src="js/script.js" defer></script>
-    <script src="js/cards.js" defer></script>
 </body>
 
 </html>
