@@ -1,100 +1,42 @@
-{
-    "siteInfo": {
+{   "siteInfo": {
+    "title": "Fuling Chen - 个人主页",
+    "description": "Fuling Chen - 个人主页",
+    "motto": "休言万事转头空，未转头时皆梦。",
+    "startDate": "2024-03-04T00:00:00Z",
+    "avatar": "https://gcore.jsdelivr.net/gh/0fuling0/source@main/img/avatar.webp",
+    "profile": {
+        "name": "Fuling Chen",
+        "nickname": "@迷宫猫",
+        "bio": "这个人保持低调，热爱简单生活。对于各种事物持平和态度，注重个人空间和独立思考。喜欢追求兴趣爱好，追求内心宁静和平衡。",
+        "education": {
+            "university": "喵喵大学",
+            "major": "给排水科学与工程",
+            "year": "2021 - 至今"
+        }
+    }
+    },
+    "header": {
         "title": "Fuling's Homepage",
-        "motto": "休言万事转头空，未转头时皆梦。",
-        "startDate": "2024-03-04T00:00:00Z",
-        "avatar": "https://gcore.jsdelivr.net/gh/0fuling0/source@main/img/avatar.webp",
-        "profile": {
-            "name": "Fuling Chen",
-            "nickname": "@迷宫猫",
-            "bio": "这个人保持低调，热爱简单生活。对于各种事物持平和态度，注重个人空间和独立思考。喜欢追求兴趣爱好，追求内心宁静和平衡。",
-            "education": {
-                "university": "喵喵大学",
-                "major": "给排水科学与工程",
-                "year": "2021 - 至今"
+        "navTitle": "Fuling's Navigation",
+        "links": [
+            {
+                "text": "博客",
+                "url": "https://www.fuling.me/",
+                "icon": "fa-solid fa-blog"
+            },
+            {
+                "text": "主页",
+                "url": "#home",
+                "icon": "fa-solid fa-house",
+                "onclick": "showSection('homepage')"
+            },
+            {
+                "text": "导航",
+                "url": "#nav",
+                "icon": "fa-solid fa-compass",
+                "onclick": "showSection('navpage')"
             }
-        }
-    },
-    "music": {
-        "type": "meting",
-        "settings": {
-            "id": "8297186297",
-            "server": "netease",
-            "type": "playlist",
-            "mutex": "true",
-            "preload": "auto",
-            "order": "random"
-        }
-    },
-    "carousel": {
-        "images": [
-            "img/ComfyUI_00122_.png",
-            "img/ComfyUI_00121_.png",
-            "img/ComfyUI_00094_.png",
-            "img/ComfyUI_00086_.png",
-            "img/ComfyUI_00079_.png",
-            "img/ComfyUI_00082_.png",
-            "img/ComfyUI_00085_.png"
-        ],
-        "interval": 10000
-    },
-    "backgroundImages": {
-        "images": [
-            "img/0.jpg",
-            "img/1.jpg",
-            "img/2.jpg",
-            "img/3.jpg",
-            "img/4.jpg",
-            "img/5.jpg"
-        ],
-        "interval": 10000
-    },
-    "comments": {
-        "system": "twikoo",
-        "settings": {
-            "envId": "https://twikoo.fuling.me/"
-        }
-    },
-    "socialLinks": {
-        "bilibili": "https://space.bilibili.com/620545781",
-        "message": "https://message.bilibili.com/?spm_id_from=333.999.0.0#/whisper/mid620545781",
-        "github": "https://github.com/0fuling0",
-        "email": "mailto:chen@fuling.me"
-    },
-    "projects": [
-        {
-            "name": "个人主页",
-            "url": "https://www.fuling.me/home/",
-            "icon": "github",
-            "description": "具备加载效果、背景图轮播、PWA支持、深色模式、时钟、一言格言轮播以及响应式布局的卡片式个人主页。"
-        },
-        {
-            "name": "个人博客",
-            "url": "https://www.fuling.me/",
-            "icon": "github",
-            "description": "简单的Hexo博客，使用volantis主题。"
-        }
-    ],
-    "navigation": {
-        "cardOrder": ["card1", "card2", "card3", "card4"],
-        "cardVisibility": {
-            "card1": true,
-            "card2": true,
-            "card3": true,
-            "card4": true
-        },
-        "cardTitles": {
-            "card1": "影视",
-            "card2": "游戏",
-            "card3": "工具",
-            "card4": "服务"
-        },
-        "navButtonText": {
-            "card1": "影视",
-            "card2": "游戏",
-            "card3": "工具",
-            "card4": "服务"
-        }
+        ]
     },
     "homepage": {
         "cards": [
@@ -174,13 +116,77 @@
             }
         ]
     },
+    "projects": [
+        {
+            "name": "个人主页",
+            "url": "https://www.fuling.me/home/",
+            "icon": "github",
+            "description": "具备加载效果、背景图轮播、PWA支持、深色模式、时钟、一言格言轮播以及响应式布局的卡片式个人主页。"
+        },
+        {
+            "name": "个人博客",
+            "url": "https://www.fuling.me/",
+            "icon": "github",
+            "description": "简单的Hexo博客，使用volantis主题。"
+        }
+    ],
+    "carousel": {
+        "images": [
+            "img/ComfyUI_00122_.webp",
+            "img/ComfyUI_00121_.webp",
+            "img/ComfyUI_00094_.webp",
+            "img/ComfyUI_00086_.webp",
+            "img/ComfyUI_00079_.webp",
+            "img/ComfyUI_00082_.webp",
+            "img/ComfyUI_00085_.webp"
+        ],
+        "interval": 10000
+    },
+    "socialLinks": {
+        "bilibili": "https://space.bilibili.com/620545781",
+        "message": "https://message.bilibili.com/?spm_id_from=333.999.0.0#/whisper/mid620545781",
+        "github": "https://github.com/0fuling0",
+        "email": "mailto:chen@fuling.me"
+    },
+    "backgroundImages": {
+        "images": [
+            "https://api.xsot.cn/bing?jump=true",
+            "img/0.webp",
+            "img/1.webp",
+            "img/2.webp",
+            "img/3.webp",
+            "img/4.webp",
+            "img/5.webp"
+        ],
+        "interval": 10000
+    },
+    "music": {
+        "type": "meting",
+        "settings": {
+            "id": "8297186297",
+            "server": "netease",
+            "type": "playlist",
+            "mutex": "true",
+            "preload": "auto",
+            "order": "random"
+        }
+    },
+    "comments": {
+        "system": "twikoo",
+        "settings": {
+            "envId": "https://twikoo.fuling.me/"
+        }
+    },
     "hitokoto": {
-        "url": "https://v1.hitokoto.cn/",
+        "url": "https://international.v1.hitokoto.cn/",
         "interval": 10000,
         "messages": {
             "loading": "正在加载一言...",
             "error": "获取一言失败，请稍后再试...",
             "default": "你好，又见面了！"
         }
+    },
+    "footer": {
+        "copyright": "© 2024 Fuling Chen. All rights reserved."
     }
 }

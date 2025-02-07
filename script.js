@@ -1,140 +1,131 @@
-// 定义深色模式和浅色模式的颜色
-const DARK_MODE_COLOR = '#272a29';
-const LIGHT_MODE_COLOR = '#cfd2d1';
-
-// 定义背景图片和轮播图片的索引
 let currentBackgroundImageIndex = 0;
 let currentCarouselIndex = 0;
 
-// 定义背景图片和轮播图片的数组
-let backgroundImages = [
-    'img/0.jpg',
-    'img/1.jpg',
-    'img/2.jpg',
-    'img/3.jpg',
-    'img/4.jpg',
-    'img/5.jpg'
-];
-let carouselImages = [
-    'img/ComfyUI_00122_.png',
-    'img/ComfyUI_00121_.png',
-    'img/ComfyUI_00094_.png',
-    'img/ComfyUI_00086_.png',
-    'img/ComfyUI_00079_.png',
-    'img/ComfyUI_00082_.png',
-    'img/ComfyUI_00085_.png'
-];
+let backgroundImages = [];
+let carouselImages = [];
 
-// 定义自动轮播和背景图片切换的定时器
 let autoSlideInterval;
 let backgroundImageInterval;
 
-// 页面加载时的事件处理
-window.addEventListener('load', function () {
-    // adjustFooter();
-});
+(function() {
+    let darkMode = false;
+    const html = document.documentElement;
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (localStorage.getItem('darkMode') !== null) {
+        darkMode = localStorage.getItem('darkMode') === 'true';
+    } else if (prefersDarkMode) {
+        darkMode = true;
+    }
+    
+    if (darkMode) {
+        html.classList.add('dark-mode');
+        metaTheme.setAttribute('content', 'rgba(38, 38, 38, 0.25)');
+    } else {
+        html.classList.add('light');
+        metaTheme.setAttribute('content', 'rgba(255, 255, 255, 0.4)');
+    }
+})();
 
-// DOM内容加载完成时的事件处理
 document.addEventListener('DOMContentLoaded', function () {
-    showLoading();
-    
-    // 首先初始化基本功能
-    setInitialDarkMode();
+    setTimeout(() => {
+        const loadingContainer = document.querySelector('.loading-container');
+        if (loadingContainer) {
+            loadingContainer.classList.add('fade-out');
+            setTimeout(() => {
+                loadingContainer.remove();
+            }, 500);
+        }
+    }, 1000);
+
     updateClock();
-    initBackgroundImage();
     
-    // 加载配置
     fetch('config.json')
         .then(response => response.json())
         .then(config => {
             window.siteConfig = config;
             
-            // 初始化网站
+            if (config.backgroundImages && Array.isArray(config.backgroundImages.images)) {
+                backgroundImages = config.backgroundImages.images;
+            }
+            initBackgroundImage();
+            startBackgroundSlideshow();
+            
+            if (config.carousel && Array.isArray(config.carousel.images)) {
+                carouselImages = config.carousel.images;
+                clearInterval(autoSlideInterval);
+                autoSlideInterval = setInterval(nextSlide, config.carousel.interval || 10000);
+            }
+            
             initSiteWithConfig(config);
             
-            // 渲染主页卡片
             if (config.homepage && config.homepage.cards) {
                 renderHomepageCards(config.homepage.cards);
             } else {
                 console.error('Homepage cards configuration not found');
             }
             
-            // 在所有内容加载完成后初始化其他功能
             initHitokoto();
-            if (config.carousel) {
-                carouselImages = config.carousel.images;
-                initCarousel();
-                startAutoSlide();
-            }
+            initCarousel();
         })
         .catch(error => {
             console.error('Error loading configuration:', error);
-        })
-        .finally(() => {
-            hideLoading();
         });
 });
 
-// 显示加载动画
-function showLoading() {
-    document.querySelector('.loading-container').style.display = 'flex';
-}
-showLoading();
-
-// 隐藏加载动画
-function hideLoading() {
-    document.querySelector('.loading-container').style.display = 'none';
-}
-
-// 删除原有的 adjustFooter 函数及其调用
-// function adjustFooter() { /* ...existing code... */ }
-// window.addEventListener('resize', adjustFooter);
-// window.addEventListener('load', function () { adjustFooter(); });
-
-// 初始化背景图片
 function initBackgroundImage() {
     const body = document.body;
     const savedIndex = localStorage.getItem('backgroundImageIndex');
     if (savedIndex !== null) {
         currentBackgroundImageIndex = parseInt(savedIndex);
     }
+    
     updateBackgroundImage();
     body.addEventListener('transitionend', function () {
         body.style.transition = '';
     });
 }
 
-// 更新背景图片
 function updateBackgroundImage() {
+    if (!backgroundImages || backgroundImages.length === 0) return;
+    
     const body = document.body;
-    body.style.transition = 'background-image 1.5s ease';
-    body.style.backgroundImage = `url('${backgroundImages[currentBackgroundImageIndex]}')`;
-    localStorage.setItem('backgroundImageIndex', currentBackgroundImageIndex);
+    const currentImage = backgroundImages[currentBackgroundImageIndex];
+    
+    const img = new Image();
+    img.onload = function() {
+        body.style.transition = 'background-image 1.5s ease';
+        body.style.backgroundImage = `url('${currentImage}')`;
+        localStorage.setItem('backgroundImageIndex', currentBackgroundImageIndex);
+        
+        const nextIndex = (currentBackgroundImageIndex + 1) % backgroundImages.length;
+        preloadNextBackgroundImage(nextIndex);
+    };
+    img.src = currentImage;
 }
 
-// 切换到下一张背景图片
 function nextBackgroundImage() {
     currentBackgroundImageIndex = (currentBackgroundImageIndex + 1) % backgroundImages.length;
     preloadNextBackgroundImage(updateBackgroundImage);
 }
 
-// 预加载下一张背景图片
-function preloadNextBackgroundImage(callback) {
-    const nextIndex = (currentBackgroundImageIndex + 1) % backgroundImages.length;
+function preloadNextBackgroundImage(nextIndex) {
+    if (!backgroundImages || backgroundImages.length === 0) return;
+    
     const img = new Image();
-    img.onload = callback;
     img.src = backgroundImages[nextIndex];
 }
 
-// 初始化轮播图
 function initCarousel() {
     const carouselImg = document.querySelector('.carousel-img');
     if (!carouselImg) {
         console.warn('Carousel image element not found, waiting for homepage cards to render...');
-        return; // 如果元素不存在，直接返回
+        return;
     }
     
     showSlide(currentCarouselIndex);
+    initCarouselIndicators();
     startAutoSlide();
     
     const carouselContainer = document.querySelector('.carousel-container');
@@ -144,74 +135,88 @@ function initCarousel() {
     }
 }
 
-// 显示指定索引的轮播图
 function showSlide(index) {
     const img = document.querySelector('.carousel-img');
-    if (!img) return; // 如果元素不存在，直接返回
-    img.src = carouselImages[index];
+    if (!img) return;
+    
+    const newImg = new Image();
+    newImg.onload = function() {
+        img.classList.add('fade-out');
+        
+        setTimeout(() => {
+            img.src = carouselImages[index];
+            img.classList.remove('fade-out');
+            img.classList.add('fade-in');
+            
+            setTimeout(() => {
+                img.classList.remove('fade-in');
+            }, 500);
+        }, 500);
+    };
+    newImg.src = carouselImages[index];
+    
+    updateIndicators(index);
 }
 
-// 切换到下一张轮播图
 function nextSlide() {
     currentCarouselIndex = (currentCarouselIndex + 1) % carouselImages.length;
     showSlide(currentCarouselIndex);
 }
 
-// 切换到上一张轮播图
 function prevSlide() {
     currentCarouselIndex = (currentCarouselIndex - 1 + carouselImages.length) % carouselImages.length;
     showSlide(currentCarouselIndex);
 }
 
-// 开始自动轮播
 function startAutoSlide() {
     if (autoSlideInterval) clearInterval(autoSlideInterval);
     autoSlideInterval = setInterval(nextSlide, 10000);
 }
 
-// 停止自动轮播
 function stopAutoSlide() {
     clearInterval(autoSlideInterval);
 }
 
-// 切换深色模式
 function toggleDarkMode() {
-    const isDarkMode = document.body.classList.toggle('dark-mode');
-    updateThemeColor(isDarkMode);
+    const html = document.documentElement;
+    const isDarkMode = !html.classList.contains('dark-mode');
+    
+    if (isDarkMode) {
+        html.classList.remove('light');
+        html.classList.add('dark-mode');
+    } else {
+        html.classList.remove('dark-mode');
+        html.classList.add('light');
+    }
+    
     localStorage.setItem('darkMode', isDarkMode);
+    setThemeColor();
 }
 
-// 更新主题颜色
-function updateThemeColor(isDarkMode) {
-    const themeColorMeta = document.getElementById('theme-color-meta');
-    themeColorMeta.content = isDarkMode ? DARK_MODE_COLOR : LIGHT_MODE_COLOR;
-}
-
-// 设置初始的深色模式
-function setInitialDarkMode() {
-    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const storedDarkMode = localStorage.getItem('darkMode');
-    if (storedDarkMode === 'true' || (storedDarkMode === null && prefersDarkMode)) {
-        document.body.classList.add('dark-mode');
-        updateThemeColor(true);
-        localStorage.setItem('darkMode', true);
+const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+darkModeMediaQuery.addEventListener('change', (e) => {
+    const isDarkMode = e.matches;
+    const html = document.documentElement;
+    
+    if (isDarkMode) {
+        html.classList.remove('light');
+        html.classList.add('dark-mode');
     } else {
-        updateThemeColor(false);
+        html.classList.remove('dark-mode');
+        html.classList.add('light');
     }
-}
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (e.matches) {
-        document.body.classList.add('dark-mode');
-        updateThemeColor(true);
-        localStorage.setItem('darkMode', true);
-    } else {
-        document.body.classList.remove('dark-mode');
-        updateThemeColor(false);
-        localStorage.setItem('darkMode', false);
-    }
+    setThemeColor();
 });
 
-// 更新时钟
+function setThemeColor() {
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (document.documentElement.classList.contains('dark-mode')) {
+        metaTheme.setAttribute('content', 'rgba(38, 38, 38, 0.25)');
+    } else {
+        metaTheme.setAttribute('content', 'rgba(255, 255, 255, 0.4)');
+    }
+}
+
 function updateClock() {
     const now = new Date();
     const options = {
@@ -238,12 +243,10 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 
-// 返回顶部按钮点击事件
 document.getElementById('backToTop').addEventListener('click', function () {
     scrollToPosition(0, 500);
 });
 
-// 返回底部按钮点击事件
 document.getElementById('backToBottom').addEventListener('click', function () {
     const documentHeight = Math.max(
         document.body.scrollHeight, document.documentElement.scrollHeight,
@@ -255,7 +258,6 @@ document.getElementById('backToBottom').addEventListener('click', function () {
     scrollToPosition(targetPosition, 700);
 });
 
-// 滚动到指定位置
 function scrollToPosition(target, duration) {
     const start = window.scrollY;
     const distance = target - start;
@@ -272,7 +274,6 @@ function scrollToPosition(target, duration) {
     requestAnimationFrame(scroll);
 }
 
-// 缓动函数
 function easeInOutQuad(t, b, c, d) {
     t /= d / 2;
     if (t < 1) return c / 2 * t * t + b;
@@ -280,43 +281,60 @@ function easeInOutQuad(t, b, c, d) {
     return -c / 2 * (t * (t - 2) - 1) + b;
 }
 
-// 全局变量存储当前一言内容
 let currentHitokoto = window.siteConfig?.hitokoto?.messages?.default || '你好，又见面了！';
 
-// 初始化一言
 function initHitokoto() {
-    // 使用配置中的加载消息
     updateAllHitokotoContainers(window.siteConfig?.hitokoto?.messages?.loading || '正在加载一言...');
     getHitokoto();
-    // 使用配置中的刷新间隔
     setInterval(getHitokoto, window.siteConfig?.hitokoto?.interval || 10000);
 }
 
-// 更新所有一言容器
 function updateAllHitokotoContainers(content) {
     document.querySelectorAll('.hitokoto-container').forEach(container => {
         container.textContent = content;
     });
 }
 
-// 获取一言
 function getHitokoto() {
-    const url = window.siteConfig?.hitokoto?.url || 'https://v1.hitokoto.cn/';
-    return fetch(url)
-        .then(response => response.json())
+    const url = window.siteConfig?.hitokoto?.url || 'https://international.v1.hitokoto.cn/';
+    return fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+            'Accept': 'application/json',
+            'Origin': window.location.origin,
+            'Referer': window.location.href
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                if (url.includes('international')) {
+                    const fallbackUrl = 'https://v1.hitokoto.cn/';
+                    console.log('Falling back to regular API:', fallbackUrl);
+                    return fetch(fallbackUrl, {
+                        method: 'GET',
+                        mode: 'cors',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            currentHitokoto = data.from ? 
+            const content = data.from ? 
                 `『${data.hitokoto}』—— ${data.from}` : 
                 data.hitokoto;
-            updateAllHitokotoContainers(currentHitokoto);
+            updateAllHitokotoContainers(content);
         })
         .catch(error => {
-            console.error('Error fetching hitokoto:', error);
+            console.warn('Error fetching hitokoto:', error);
             updateAllHitokotoContainers(window.siteConfig?.hitokoto?.messages?.error || '获取一言失败，请稍后再试...');
         });
 }
 
-// 更新网站运行时间信息
 function updateRuntimeInfo(startDate) {
     const currentDate = new Date();
     const startDateObj = new Date(startDate);
@@ -349,24 +367,20 @@ function updateRuntimeInfo(startDate) {
     }
 }
 
-// 初始化网站运行时间
 function initRuntimeInfo(config) {
     if (config.siteInfo && config.siteInfo.startDate) {
         updateRuntimeInfo(config.siteInfo.startDate);
-        // 每秒更新一次运行时间
         setInterval(() => {
             updateRuntimeInfo(config.siteInfo.startDate);
         }, 1000);
     }
 }
 
-// 初始化评论系统
 twikoo.init({
     envId: 'https://twikoo.fuling.me/',
     el: '#tcomment',
 });
 
-// 显示指定的页面部分
 function showSection(sectionId) {
     const sectionsToHide = ['homepage', 'navpage'];
     sectionsToHide.forEach(id => {
@@ -384,11 +398,8 @@ function showSection(sectionId) {
     }
     const mainElement = document.querySelector('main');
     mainElement.style.columnCount = (sectionId === 'navpage') ? '1' : '';
-    // 删除或注释掉 footer 调整调用
-    // adjustFooter();
 }
 
-// 更新页眉文本
 function updateHeaderText(sectionId) {
     const headerTextElement = document.querySelector('header h1');
     if (headerTextElement) {
@@ -406,7 +417,6 @@ function updateHeaderText(sectionId) {
     }
 }
 
-// 初始化页面
 function init() {
     const hash = window.location.hash.substring(1);
     if (hash === 'nav' || hash === 'home') {
@@ -418,21 +428,17 @@ function init() {
 init();
 window.addEventListener('hashchange', init);
 
-// 定时器和当前卡片编号
 let timer;
 let currentCardNumber;
 
-// 开始定时器
 function startTimer(cardNumber) {
     timer = setTimeout(() => showCard(cardNumber), 500);
 }
 
-// 清除定时器
 function clearTimer() {
     clearTimeout(timer);
 }
 
-// 显示指定编号的卡片
 function showCard(cardNumber) {
     const cards = document.querySelectorAll('.cardItem');
     cards.forEach(card => card.classList.remove('active', 'current'));
@@ -451,7 +457,6 @@ function showCard(cardNumber) {
 document.querySelector('.navButton[data-card="1"]').classList.add('current');
 currentCardNumber = 1;
 
-// 切换到指定编号的卡片
 function switchToCard(newCardNumber) {
     clearTimer();
     showCard(newCardNumber);
@@ -464,7 +469,6 @@ cardItems.forEach(card => {
     });
 });
 
-// 网格项点击事件
 document.addEventListener("DOMContentLoaded", function () {
     var gridItems = document.querySelectorAll('.grid-item');
     gridItems.forEach(function (item) {
@@ -477,7 +481,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-// DOM内容加载完成时的事件处理
 document.addEventListener('DOMContentLoaded', function () {
     var linkElements = document.querySelectorAll('.grid-item');
     var totalLinks = linkElements.length;
@@ -489,21 +492,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// 切换搜索选项
 function toggleOptions() {
     var options = document.getElementById('searchOptions');
     options.style.display = options.style.display === 'grid' ? 'none' : 'grid';
 }
 
-// 选择搜索选项
 function selectOption(option) {
     document.querySelector('.select-styled').textContent = option;
     toggleOptions();
-    // 立即记住选择的搜索引擎
     localStorage.setItem('lastSelectedEngine', option);
 }
 
-// 执行搜索
 function search() {
     var selectedEngine = document.querySelector('.select-styled').textContent;
     var searchTerm = document.querySelector('.search-input').value;
@@ -522,11 +521,9 @@ function search() {
     var searchURL = searchURLs[selectedEngine] + encodeURIComponent(searchTerm);
     window.open(searchURL, '_blank');
 
-    // 记住最后选择的搜索引擎
     localStorage.setItem('lastSelectedEngine', selectedEngine);
 }
 
-// 页面加载时设置最后选择的搜索引擎
 document.addEventListener('DOMContentLoaded', function () {
     var lastSelectedEngine = localStorage.getItem('lastSelectedEngine');
     if (lastSelectedEngine) {
@@ -534,14 +531,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// 搜索输入框按下回车键时执行搜索
 document.querySelector('.search-input').addEventListener('keydown', function (event) {
     if (event.key === 'Enter') {
         search();
     }
 });
 
-// 加载配置
 fetch('config.json')
     .then(response => response.json())
     .then(config => {
@@ -551,7 +546,6 @@ fetch('config.json')
         console.error('Error loading config:', error);
     });
 
-// 使用配置初始化网站
 function initSiteWithConfig(config) {
     if (!config) {
         console.error('Configuration not loaded');
@@ -559,9 +553,7 @@ function initSiteWithConfig(config) {
     }
 
     try {
-        // 确保DOM加载完成后再执行
         document.addEventListener('DOMContentLoaded', () => {
-            // 设置网站标题和格言
             if (config.siteInfo) {
                 document.title = config.siteInfo.title;
                 const mottoElement = document.querySelector('.motto');
@@ -569,7 +561,6 @@ function initSiteWithConfig(config) {
                     mottoElement.textContent = config.siteInfo.motto;
                 }
                 
-                // 设置个人信息
                 const profileImg = document.querySelector('.profile img');
                 const profileName = document.querySelector('.profile-info h2');
                 const profileNickname = document.querySelector('.profile-info p');
@@ -579,21 +570,18 @@ function initSiteWithConfig(config) {
                 if (profileNickname) profileNickname.textContent = config.siteInfo.profile.nickname;
             }
             
-            // 设置背景图片
             if (config.backgroundImages) {
                 backgroundImages = config.backgroundImages.images;
                 clearInterval(backgroundImageInterval);
                 backgroundImageInterval = setInterval(nextBackgroundImage, config.backgroundImages.interval);
             }
             
-            // 设置轮播图片
             if (config.carousel) {
                 carouselImages = config.carousel.images;
                 clearInterval(autoSlideInterval);
                 autoSlideInterval = setInterval(nextSlide, config.carousel.interval);
             }
             
-            // 初始化音乐播放器
             if (config.music && config.music.type === 'meting') {
                 const musicContainer = document.querySelector('#aplayer');
                 if (musicContainer) {
@@ -606,18 +594,15 @@ function initSiteWithConfig(config) {
                 }
             }
             
-            // 初始化评论系统
             if (config.comments && config.comments.system === 'twikoo') {
                 twikoo.init(config.comments.settings);
             }
             
-            // 更新网站运行时间
             if (config.siteInfo && config.siteInfo.startDate) {
                 const startDate = new Date(config.siteInfo.startDate);
                 updateRuntimeInfo(startDate);
             }
             
-            // 渲染项目列表
             if (config.projects) {
                 const projectList = document.querySelector('.project-list');
                 if (projectList) {
@@ -625,26 +610,63 @@ function initSiteWithConfig(config) {
                 }
             }
 
-            // 渲染主页卡片
             if (config.homepage && config.homepage.cards) {
                 renderHomepageCards(config.homepage.cards);
             }
 
-            // 初始化网站运行时间
             initRuntimeInfo(config);
         });
 
     } catch (error) {
         console.error('Error initializing site with config:', error);
     }
+    if (config && config.siteInfo) {
+        document.title = config.siteInfo.title || document.title;
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc && config.siteInfo.description) {
+            metaDesc.setAttribute('content', config.siteInfo.description);
+        }
+        const headerTitle = document.querySelector('header h1');
+        if (headerTitle) {
+            headerTitle.textContent = config.header?.title || config.siteInfo.title;
+        }
+        const mottoEl = document.querySelector('.motto');
+        if (mottoEl && config.siteInfo.motto) {
+            mottoEl.textContent = config.siteInfo.motto;
+        }
+    }
+    if (config && config.header && config.header.links) {
+        const linksContainer = document.getElementById('headerLinks');
+        if (linksContainer) {
+            linksContainer.innerHTML = '';
+            config.header.links.forEach(link => {
+                const a = document.createElement('a');
+                a.href = link.url;
+                if (link.icon) {
+                    const i = document.createElement('i');
+                    i.className = link.icon;
+                    a.appendChild(i);
+                    a.appendChild(document.createTextNode(link.text));
+                } else {
+                    a.textContent = link.text;
+                }
+                if (link.onclick) a.setAttribute('onclick', link.onclick);
+                linksContainer.appendChild(a);
+            });
+        }
+    }
+    if (config && config.footer) {
+        const footerP = document.querySelector('footer p');
+        if (footerP) {
+            footerP.innerHTML = config.footer.copyright;
+        }
+    }
 }
 
-// 渲染项目列表
 function renderProjects(projects) {
-    // 更精确选择 homepage 下的列表
     const projectList = document.querySelector('#homepage .project-list');
     if (!projectList) {
-        console.warn('No .project-list found in #homepage, skipping render');
+        console.debug('No .project-list found in #homepage, waiting for DOM updates...');
         return;
     }
     projectList.innerHTML = projects.map(project => `
@@ -658,7 +680,6 @@ function renderProjects(projects) {
     `).join('');
 }
 
-// 渲染主页卡片
 function renderHomepageCards(cards) {
     const homepage = document.getElementById('homepage');
     if (!homepage) return;
@@ -679,7 +700,7 @@ function renderHomepageCards(cards) {
                     </div>
                     <div class="hitokoto-container"></div>
                 `;
-                updateClock(); // 立即更新时钟显示
+                updateClock();
                 break;
 
             case 'profile':
@@ -743,16 +764,18 @@ function renderHomepageCards(cards) {
                     <h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br>
                     <ul>
                         ${card.showVisits ? `
-                            <li><strong>本站总访问量：</strong><span id="busuanzi_value_site_pv"></span> 次</li>
-                            <li><strong>本站总访客数：</strong><span id="busuanzi_value_site_uv"></span> 人</li>
+                            <li><strong>本站总访问量：</strong>
+                                <span id="busuanzi_site_pv"></span> 次
+                            </li>
+                            <li><strong>本站总访客数：</strong>
+                                <span id="busuanzi_site_uv"></span> 人
+                            </li>
                         ` : ''}
-                        ${card.showRuntime ? `
-                            <li><div id="runtime-info-container"></div></li>
-                        ` : ''}
+                        <li><div id="runtime-info-container"></div></li>
                     </ul>
                 `;
-                // 立即初始化运行时间
-                if (card.showRuntime && window.siteConfig && window.siteConfig.siteInfo && window.siteConfig.siteInfo.startDate) {
+                
+                if (window.siteConfig?.siteInfo?.startDate) {
                     initRuntimeInfo(window.siteConfig);
                 }
                 break;
@@ -805,8 +828,7 @@ function renderHomepageCards(cards) {
         homepage.appendChild(section);
     });
 
-    // 重新初始化需要的功能
-    initCarousel(); // 确保在卡片渲染后初始化轮播图
+    initCarousel();
     updateClock();
     initHitokoto();
     if (window.siteConfig.music && window.siteConfig.music.type === 'meting') {
@@ -827,20 +849,35 @@ function renderHomepageCards(cards) {
     }
 }
 
-// DOM内容加载完成时的事件处理
+function refreshBusuanzi() {
+    if (typeof window.busuanzi_refresh === 'function') {
+        window.busuanzi_refresh();
+    } else {
+        const script = document.createElement('script');
+        script.src = 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+        script.async = true;
+        document.body.appendChild(script);
+        
+        script.onload = function() {
+            setTimeout(() => {
+                const pv = document.getElementById('busuanzi_container_site_pv');
+                const uv = document.getElementById('busuanzi_container_site_uv');
+                if (pv) pv.style.display = '';
+                if (uv) uv.style.display = '';
+            }, 1000);
+        };
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
-    // 初始化基本功能
-    setInitialDarkMode();
     updateClock();
     initBackgroundImage();
     initHitokoto();
     
-    // 加载配置
     fetch('config.json')
         .then(response => response.json())
         .then(config => {
             initSiteWithConfig(config);
-            // 在配置加载完成后再初始化轮播图
             if (config.carousel) {
                 carouselImages = config.carousel.images;
                 initCarousel();
@@ -850,12 +887,9 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(error => {
             console.error('Error loading config:', error);
         });
-        
-    hideLoading();
 });
 
-// 加载卡片内容
-fetch('cards.json')
+fetch('nav.json')
     .then(response => response.json())
     .then(data => {
         renderCards(data.cards);
@@ -864,7 +898,6 @@ fetch('cards.json')
         console.error('Error loading cards:', error);
     });
 
-// 渲染卡片内容
 function renderCards(cards) {
     const parentContainer = document.querySelector('.cardContainer');
     if (!parentContainer) {
@@ -907,11 +940,9 @@ function renderCards(cards) {
         parentContainer.appendChild(cardElement);
     });
 
-    // 初始化卡片交互
     initializeCardInteractions();
 }
 
-// 初始化卡片交互
 function initializeCardInteractions() {
     const cardItems = document.querySelectorAll('.cardItem');
     cardItems.forEach(card => {
@@ -920,4 +951,55 @@ function initializeCardInteractions() {
             switchToCard(cardNumber);
         });
     });
+}
+
+function startBackgroundSlideshow() {
+    if (!backgroundImages || backgroundImages.length === 0) return;
+    
+    if (backgroundImageInterval) clearInterval(backgroundImageInterval);
+    const interval = window.siteConfig?.backgroundImages?.interval || 30000;
+    
+    updateBackgroundImage();
+    
+    backgroundImageInterval = setInterval(() => {
+        currentBackgroundImageIndex = (currentBackgroundImageIndex + 1) % backgroundImages.length;
+        updateBackgroundImage();
+    }, interval);
+}
+
+function updateIndicators(index) {
+    const dots = document.querySelectorAll('.carousel-dot');
+    dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+    });
+}
+
+function initCarouselIndicators() {
+    if (!carouselImages || !carouselImages.length) return;
+    
+    const container = document.querySelector('.carousel-container');
+    if (!container) return;
+    
+    const oldIndicators = container.querySelector('.carousel-indicators');
+    if (oldIndicators) {
+        oldIndicators.remove();
+    }
+    
+    const indicators = document.createElement('div');
+    indicators.className = 'carousel-indicators';
+    
+    carouselImages.forEach((_, index) => {
+        const dot = document.createElement('div');
+        dot.className = 'carousel-dot';
+        if (index === currentCarouselIndex) {
+            dot.classList.add('active');
+        }
+        dot.addEventListener('click', () => {
+            currentCarouselIndex = index;
+            showSlide(index);
+        });
+        indicators.appendChild(dot);
+    });
+    
+    container.appendChild(indicators);
 }
