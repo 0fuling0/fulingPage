@@ -355,7 +355,7 @@ html.dark-mode .card:hover::before {
 }
 
 .card:hover {
-    transform: scale(1.05);
+    transform: scale(1.03);
     background: var(--glass-background);
     backdrop-filter: blur(calc(var(--blur-amount) * 1.5));
     -webkit-backdrop-filter: blur(calc(var(--blur-amount) * 1.5));
