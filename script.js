@@ -763,14 +763,12 @@ function renderHomepageCards(cards) {
                 section.innerHTML = `
                     <h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br>
                     <ul>
-                        ${card.showVisits ? `
-                            <li><strong>本站总访问量：</strong>
-                                <span id="busuanzi_site_pv"></span> 次
-                            </li>
-                            <li><strong>本站总访客数：</strong>
-                                <span id="busuanzi_site_uv"></span> 人
-                            </li>
-                        ` : ''}
+                        <li><strong>本站总访问量：</strong>
+                            <span id="busuanzi_site_pv">0</span> 次
+                        </li>
+                        <li><strong>本站总访客数：</strong>
+                            <span id="busuanzi_site_uv">0</span> 人
+                        </li>
                         <li><div id="runtime-info-container"></div></li>
                     </ul>
                 `;
@@ -847,6 +845,15 @@ function renderHomepageCards(cards) {
     if (window.siteConfig.projects) {
         renderProjects(window.siteConfig.projects);
     }
+
+    // 在所有卡片渲染完成后刷新不蒜子统计
+    setTimeout(() => {
+        const script = document.createElement('script');
+        script.src = 'https://npm.onmicrosoft.cn/penndu@16.0.0/bsz.js';
+        script.async = true;
+        script.defer = true;
+        document.body.appendChild(script);
+    }, 100);
 }
 
 function refreshBusuanzi() {
