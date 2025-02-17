@@ -673,7 +673,7 @@ function renderProjects(projects) {
     projectList.innerHTML = projects.map(project => `
         <li class="project">
             <a href="${project.url}" target="_blank">
-                <i class="fab fa-${project.icon}"></i>
+                <i class="${project.icon}"></i>
                 <span>${project.name}</span>
             </a>
             <p>${project.description}</p>
@@ -687,7 +687,12 @@ function renderHomepageCards(cards) {
     
     homepage.innerHTML = '';
 
-    cards.forEach(card => {
+    const cardOrder = window.siteConfig?.homepage?.cardOrder || [];
+
+    cardOrder.forEach(cardType => {
+        const card = cards.find(c => c.type === cardType);
+        if (!card) return;
+
         const section = document.createElement('section');
         section.className = 'card';
         if (card.type) section.classList.add(card.type);
@@ -706,10 +711,10 @@ function renderHomepageCards(cards) {
 
             case 'profile':
                 section.innerHTML = `
-                    <img src="${window.siteConfig.siteInfo.avatar}" alt="头像">
+                    <img src="${card.avatar}" alt="头像">
                     <div class="profile-info">
-                        <h2>${window.siteConfig.siteInfo.profile.name}</h2>
-                        <p>${window.siteConfig.siteInfo.profile.nickname}</p>
+                        <h2>${card.name}</h2>
+                        <p>${card.nickname}</p>
                     </div>
                     <div class="buttons">
                         ${card.buttons.map(btn => `
@@ -725,9 +730,9 @@ function renderHomepageCards(cards) {
                 section.innerHTML = `
                     <h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br>
                     <ul>
-                        <li>大学: ${window.siteConfig.siteInfo.profile.education.university}</li>
-                        <li>专业: ${window.siteConfig.siteInfo.profile.education.major}</li>
-                        <li>年份: ${window.siteConfig.siteInfo.profile.education.year}</li>
+                        <li>大学: ${card.university}</li>
+                        <li>专业: ${card.major}</li>
+                        <li>年份: ${card.year}</li>
                     </ul>
                 `;
                 break;
@@ -735,49 +740,18 @@ function renderHomepageCards(cards) {
             case 'projects':
                 section.innerHTML = `
                     <h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br>
-                    <ul class="project-list"></ul>
-                `;
-                renderProjects(window.siteConfig.projects);
-                break;
-
-            case 'contact':
-                section.innerHTML = `
-                    <h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br>
-                    <div class="contact-options">
-                        <a href="${window.siteConfig.socialLinks.email}">
-                            <i class="fas fa-at"></i>
-                            <span>电子邮件</span><br>
-                        </a>
-                        <a href="${window.siteConfig.socialLinks.github}" target="_blank">
-                            <i class="fab fa-github"></i>
-                            <span>Github</span><br>
-                        </a>
-                        <a href="${window.siteConfig.socialLinks.bilibili}" target="_blank">
-                            <i class="fab fa-bilibili"></i>
-                            <span>Bilibili</span>
-                        </a>
-                    </div>
-                `;
-                break;
-
-            case 'website-info':
-                section.innerHTML = `
-                    <h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br>
-                    <ul>
-                        <li><strong>本站总访问量：</strong>
-                            <span id="busuanzi_site_pv">0</span> 次
-                        </li>
-                        <li><strong>本站总访客数：</strong>
-                            <span id="busuanzi_site_uv">0</span> 人
-                        </li>
-                        <li><div id="runtime-info-container"></div></li>
+                    <ul class="project-list">
+                        ${card.list.map(project => `
+                            <li class="project">
+                                <a href="${project.url}" target="_blank">
+                                    <i class="${project.icon}"></i>
+                                    <span>${project.name}</span>
+                                </a>
+                                <p>${project.description}</p>
+                            </li>
+                        `).join('')}
                     </ul>
-                
                 `;
-                
-                if (window.siteConfig?.siteInfo?.startDate) {
-                    initRuntimeInfo(window.siteConfig);
-                }
                 break;
 
             case 'carousel':
@@ -791,6 +765,8 @@ function renderHomepageCards(cards) {
                         </div>
                     </div>
                 `;
+                carouselImages = card.images;
+                initCarousel();
                 break;
 
             case 'music':
@@ -799,13 +775,55 @@ function renderHomepageCards(cards) {
                     <br><br>
                     <div id="aplayer"></div>
                 `;
+                if (card.settings) {
+                    const metingJs = document.createElement('meting-js');
+                    Object.entries(card.settings).forEach(([key, value]) => {
+                        metingJs.setAttribute(key, value);
+                    });
+                    section.querySelector('#aplayer').appendChild(metingJs);
+                }
                 break;
 
             case 'comments':
                 section.innerHTML = `
                     <h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br>
-                    <div id="twikoo"></div>
+                    <div id="tcomment"></div>
                 `;
+                break;
+
+            case 'contact':
+                section.innerHTML = `
+                    <h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br>
+                    <div class="contact-options">
+                        <a href="${card.links.email}">
+                            <i class="fas fa-at"></i>
+                            <span>电子邮件</span><br>
+                        </a>
+                        <a href="${card.links.github}" target="_blank">
+                            <i class="fab fa-github"></i>
+                            <span>Github</span><br>
+                        </a>
+                        <a href="${card.links.bilibili}" target="_blank">
+                            <i class="fab fa-bilibili"></i>
+                            <span>Bilibili</span>
+                        </a>
+                    </div>
+                `;
+                break;
+
+            case 'website-info':
+                section.innerHTML = `
+                    <h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br>
+                    <ul>
+                        ${card.showVisits ? `
+                        <li><strong>本站总访问量：</strong><span id="busuanzi_value_site_pv">0</span> 次</li>
+                        <li><strong>本站总访客数：</strong><span id="busuanzi_value_site_uv">0</span> 人</li>
+                        ` : ''}
+                        ${card.showRuntime ? `<li id="runtime-info-container"></li>` : ''}
+                    </ul>
+                `;
+                initRuntimeInfo(window.siteConfig);
+                refreshBusuanzi();
                 break;
 
             default:
@@ -828,54 +846,31 @@ function renderHomepageCards(cards) {
         homepage.appendChild(section);
     });
 
-    initCarousel();
-    updateClock();
-    initHitokoto();
-    if (window.siteConfig.music && window.siteConfig.music.type === 'meting') {
-        const musicContainer = document.querySelector('#aplayer');
-        if (musicContainer) {
-            const metingJs = document.createElement('meting-js');
-            Object.entries(window.siteConfig.music.settings).forEach(([key, value]) => {
-                metingJs.setAttribute(key, value);
+    const commentsCard = cards.find(card => card.type === 'comments');
+    if (commentsCard && commentsCard.settings) {
+        setTimeout(() => {
+            twikoo.init({
+                envId: commentsCard.settings.envId,
+                el: '#tcomment',
             });
-            musicContainer.appendChild(metingJs);
-        }
+        }, 100);
     }
-    if (window.siteConfig.comments && window.siteConfig.comments.system === 'twikoo') {
-        twikoo.init(window.siteConfig.comments.settings);
-    }
-    if (window.siteConfig.projects) {
-        renderProjects(window.siteConfig.projects);
-    }
-
-    // 在所有卡片渲染完成后刷新不蒜子统计
-    setTimeout(() => {
-        const script = document.createElement('script');
-        script.src = 'https://npm.onmicrosoft.cn/penndu@16.0.0/bsz.js';
-        script.async = true;
-        script.defer = true;
-        document.body.appendChild(script);
-    }, 100);
 }
 
 function refreshBusuanzi() {
-    if (typeof window.busuanzi_refresh === 'function') {
-        window.busuanzi_refresh();
-    } else {
-        const script = document.createElement('script');
-        script.src = 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
-        script.async = true;
-        document.body.appendChild(script);
-        
-        script.onload = function() {
-            setTimeout(() => {
-                const pv = document.getElementById('busuanzi_container_site_pv');
-                const uv = document.getElementById('busuanzi_container_site_uv');
-                if (pv) pv.style.display = '';
-                if (uv) uv.style.display = '';
-            }, 1000);
-        };
-    }
+    const script = document.createElement('script');
+    script.src = 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+    script.async = true;
+    document.body.appendChild(script);
+    
+    script.onload = function() {
+        setTimeout(() => {
+            const pv = document.getElementById('busuanzi_value_site_pv');
+            const uv = document.getElementById('busuanzi_value_site_uv');
+            if (pv) pv.style.display = '';
+            if (uv) uv.style.display = '';
+        }, 1000);
+    };
 }
 
 document.addEventListener('DOMContentLoaded', function () {
