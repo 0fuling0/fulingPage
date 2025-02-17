@@ -7,6 +7,17 @@ let carouselImages = [];
 let autoSlideInterval;
 let backgroundImageInterval;
 
+function preloadInitialBackgroundImage() {
+    if (!window.siteConfig || !window.siteConfig.backgroundImages || !window.siteConfig.backgroundImages.images) return;
+    const [firstImage] = window.siteConfig.backgroundImages.images;
+    if (!firstImage) return;
+    const img = new Image();
+    img.src = firstImage;
+    document.body.style.backgroundImage = `url('${firstImage}')`;
+}
+
+preloadInitialBackgroundImage();
+
 (function() {
     let darkMode = false;
     const html = document.documentElement;
@@ -41,37 +52,72 @@ document.addEventListener('DOMContentLoaded', function () {
 
     updateClock();
     
-    fetch('config.json')
-        .then(response => response.json())
-        .then(config => {
-            window.siteConfig = config;
-            
-            if (config.backgroundImages && Array.isArray(config.backgroundImages.images)) {
-                backgroundImages = config.backgroundImages.images;
-            }
-            initBackgroundImage();
-            startBackgroundSlideshow();
-            
-            if (config.carousel && Array.isArray(config.carousel.images)) {
-                carouselImages = config.carousel.images;
-                clearInterval(autoSlideInterval);
-                autoSlideInterval = setInterval(nextSlide, config.carousel.interval || 10000);
-            }
-            
-            initSiteWithConfig(config);
-            
-            if (config.homepage && config.homepage.cards) {
-                renderHomepageCards(config.homepage.cards);
-            } else {
-                console.error('Homepage cards configuration not found');
-            }
-            
-            initHitokoto();
-            initCarousel();
-        })
-        .catch(error => {
-            console.error('Error loading configuration:', error);
+    Promise.all([
+        fetch('config.json').then(response => response.json()),
+        fetch('nav.json').then(response => response.json())
+    ])
+    .then(([config, navData]) => {
+        window.siteConfig = config;
+        initSiteWithConfig(config);
+        if (config.backgroundImages && Array.isArray(config.backgroundImages.images)) {
+            backgroundImages = config.backgroundImages.images;
+        }
+        initBackgroundImage();
+        startBackgroundSlideshow();
+        
+        if (config.carousel && Array.isArray(config.carousel.images)) {
+            carouselImages = config.carousel.images;
+            clearInterval(autoSlideInterval);
+            autoSlideInterval = setInterval(nextSlide, config.carousel.interval || 10000);
+        }
+        
+        if (config.homepage && config.homepage.cards) {
+            renderHomepageCards(config.homepage.cards);
+        } else {
+            console.error('Homepage cards configuration not found');
+        }
+        
+        initHitokoto();
+        initCarousel();
+        renderCards(navData.cards);
+    })
+    .catch(error => {
+        console.error('Error loading config or nav:', error);
+    });
+
+    var gridItems = document.querySelectorAll('.grid-item');
+    gridItems.forEach(function (item) {
+        item.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            var url = item.getAttribute('data-url');
+            window.open(url, '_blank');
         });
+    });
+
+    var linkElements = document.querySelectorAll('.grid-item');
+    var totalLinks = linkElements.length;
+    var placeholdersNeeded = Math.max(0, 24 - totalLinks);
+    for (var i = 0; i < placeholdersNeeded; i++) {
+        var placeholder = document.createElement('div');
+        placeholder.classList.add('grid-item', 'placeholder');
+        placeholder.style.backgroundColor = 'transparent';
+    }
+
+    var lastSelectedEngine = localStorage.getItem('lastSelectedEngine');
+    if (lastSelectedEngine) {
+        document.querySelector('.select-styled').textContent = lastSelectedEngine;
+    }
+
+    document.querySelector('.search-input').addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            search();
+        }
+    });
+
+    updateClock();
+    initBackgroundImage();
+    initHitokoto();
 });
 
 function initBackgroundImage() {
@@ -469,29 +515,6 @@ cardItems.forEach(card => {
     });
 });
 
-document.addEventListener("DOMContentLoaded", function () {
-    var gridItems = document.querySelectorAll('.grid-item');
-    gridItems.forEach(function (item) {
-        item.addEventListener('click', function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-            var url = item.getAttribute('data-url');
-            window.open(url, '_blank');
-        });
-    });
-});
-
-document.addEventListener('DOMContentLoaded', function () {
-    var linkElements = document.querySelectorAll('.grid-item');
-    var totalLinks = linkElements.length;
-    var placeholdersNeeded = Math.max(0, 24 - totalLinks);
-    for (var i = 0; i < placeholdersNeeded; i++) {
-        var placeholder = document.createElement('div');
-        placeholder.classList.add('grid-item', 'placeholder');
-        placeholder.style.backgroundColor = 'transparent';
-    }
-});
-
 function toggleOptions() {
     var options = document.getElementById('searchOptions');
     options.style.display = options.style.display === 'grid' ? 'none' : 'grid';
@@ -523,28 +546,6 @@ function search() {
 
     localStorage.setItem('lastSelectedEngine', selectedEngine);
 }
-
-document.addEventListener('DOMContentLoaded', function () {
-    var lastSelectedEngine = localStorage.getItem('lastSelectedEngine');
-    if (lastSelectedEngine) {
-        document.querySelector('.select-styled').textContent = lastSelectedEngine;
-    }
-});
-
-document.querySelector('.search-input').addEventListener('keydown', function (event) {
-    if (event.key === 'Enter') {
-        search();
-    }
-});
-
-fetch('config.json')
-    .then(response => response.json())
-    .then(config => {
-        initSiteWithConfig(config);
-    })
-    .catch(error => {
-        console.error('Error loading config:', error);
-    });
 
 function initSiteWithConfig(config) {
     if (!config) {
@@ -771,6 +772,7 @@ function renderHomepageCards(cards) {
                         </li>
                         <li><div id="runtime-info-container"></div></li>
                     </ul>
+                
                 `;
                 
                 if (window.siteConfig?.siteInfo?.startDate) {
@@ -880,30 +882,7 @@ document.addEventListener('DOMContentLoaded', function () {
     updateClock();
     initBackgroundImage();
     initHitokoto();
-    
-    fetch('config.json')
-        .then(response => response.json())
-        .then(config => {
-            initSiteWithConfig(config);
-            if (config.carousel) {
-                carouselImages = config.carousel.images;
-                initCarousel();
-                startAutoSlide();
-            }
-        })
-        .catch(error => {
-            console.error('Error loading config:', error);
-        });
 });
-
-fetch('nav.json')
-    .then(response => response.json())
-    .then(data => {
-        renderCards(data.cards);
-    })
-    .catch(error => {
-        console.error('Error loading cards:', error);
-    });
 
 function renderCards(cards) {
     const parentContainer = document.querySelector('.cardContainer');
