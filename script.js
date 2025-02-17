@@ -422,11 +422,6 @@ function initRuntimeInfo(config) {
     }
 }
 
-twikoo.init({
-    envId: 'https://twikoo.fuling.me/',
-    el: '#tcomment',
-});
-
 function showSection(sectionId) {
     const sectionsToHide = ['homepage', 'navpage'];
     sectionsToHide.forEach(id => {
