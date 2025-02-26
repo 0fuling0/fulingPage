@@ -29,8 +29,8 @@
     },
     "backgroundImages": {
         "images": [
-            "https://api.xsot.cn/bing?jump=true",
             "img/0.webp",
+            "https://api.xsot.cn/bing?jump=true",
             "img/1.webp",
             "img/2.webp",
             "img/3.webp",

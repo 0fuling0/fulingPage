@@ -1,0 +1,59 @@
+/*---------- 1. 变量与主题设置 ----------*/
+:root {
+    /* 颜色方案 */
+    color-scheme: light dark;
+    --background-color: #cfd2d1;
+    --font-color: #2c2c2c;
+    
+    /* 玻璃效果 - 增强透明度和模糊参数 */
+    --glass-background: rgba(255, 255, 255, 0.25);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --glass-background-dark: rgba(38, 38, 38, 0.2);
+    --glass-border-dark: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    --glass-highlight: rgba(255, 255, 255, 0.12);
+    --glass-border-width: 1px;
+    --blur-amount: 20px;
+    
+    /* 玻璃卡片内部光影 */
+    --card-inner-shadow: inset 0 0 5px rgba(255, 255, 255, 0.5);
+    --card-inner-shadow-dark: inset 0 0 3px rgba(255, 255, 255, 0.2);
+    
+    /* 颜色变量 */
+    --primary-color: rgba(33, 150, 243, 0.6);
+    --secondary-color: rgba(21, 101, 192, 0.6);
+    --tertiary-color: rgba(13, 71, 161, 0.6);
+    --dark-mode-color: rgba(243, 156, 18, 0.6);
+    --dark-mode-hover: rgba(224, 123, 0, 0.6);
+    --dark-mode-active: rgba(179, 102, 0, 0.6);
+
+    /* 元素属性 */
+    --footer-background: rgba(255, 255, 255, 0.5);
+    --footer-border-radius: 12px 12px 0 0;
+    --footer-transition: transform 0.3s ease-in-out, background-color 0.3s ease;
+    
+    --button-width: 32px;
+    --button-height: 32px;
+    --button-size: 1rem;
+    --button-radius: 12px;
+    --button-transition: background-color 0.3s ease, transform 0.2s ease;
+    
+    /* 动画变量 */
+    --hover-scale: 1.03;
+    --hover-transition-time: 0.4s;
+    --box-shadow-hover: 0 10px 40px -10px rgba(31, 38, 135, 0.5);
+}
+
+:root.dark-mode {
+    --background-color: #272a29;
+    --font-color: #eee;
+    --glass-background: rgba(38, 38, 38, 0.2);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-highlight: rgba(255, 255, 255, 0.05);
+    --card-inner-shadow: var(--card-inner-shadow-dark);
+    --primary-color: rgba(243, 156, 18, 0.6);
+    --secondary-color: rgba(224, 123, 0, 0.6);
+    --tertiary-color: rgba(179, 102, 0, 0.6);
+    --footer-background: rgba(38, 38, 38, 0.1);
+    --box-shadow-hover: 0 10px 40px -10px rgba(255, 165, 0, 0.3);
+}

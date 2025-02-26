@@ -1,0 +1,253 @@
+/*---------- 4. 组件样式 ----------*/
+/* 按钮样式 */
+.button {
+    white-space: nowrap;
+    padding: 10px 15px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    border: none;
+    border-radius: 10px;
+    outline: none;
+    background-color: var(--primary-color);
+    color: #fff;
+    transition: var(--button-transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.button::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -50%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(
+        60deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.2) 50%,
+        transparent 100%
+    );
+    transform: translateX(-100%) rotate(45deg);
+    transition: transform 0.5s ease-in-out;
+    pointer-events: none;
+}
+
+.button:hover {
+    background-color: var(--secondary-color);
+    transform: scale(1.05);
+}
+
+.button:hover::after {
+    transform: translateX(100%) rotate(45deg);
+}
+
+.button:active {
+    background-color: var(--tertiary-color);
+}
+
+html.dark-mode .button {
+    background-color: var(--dark-mode-color);
+}
+
+html.dark-mode .button:hover {
+    background-color: var(--dark-mode-hover);
+}
+
+html.dark-mode .button:active {
+    background-color: var(--dark-mode-active);
+}
+
+/* 导航按钮 */
+.navButton {
+    cursor: pointer;
+    padding: 10px 0;
+    border: none;
+    position: relative;
+}
+
+.navButton::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: transparent;
+    transition: background-color 0.3s ease;
+}
+
+.navButton:hover::before {
+    background-color: var(--font-color);
+}
+
+.navButton.current {
+    font-weight: bold;
+}
+
+.navButton.current::before {
+    background-color: var(--primary-color);
+}
+
+html.dark-mode .navButton.current::before {
+    background-color: var(--dark-mode-color);
+}
+
+/* 卡片样式 - 增强玻璃效果 */
+.card {
+    break-inside: avoid;
+    margin-bottom: 20px;
+    position: relative;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: var(--glass-shadow), var(--card-inner-shadow);
+    background: var(--glass-background);
+    backdrop-filter: blur(var(--blur-amount));
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    border: var(--glass-border-width) solid var(--glass-border);
+    transition: transform var(--hover-transition-time) cubic-bezier(0.165, 0.84, 0.44, 1),
+                background-color 0.3s ease,
+                backdrop-filter 0.3s ease,
+                box-shadow 0.3s ease;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* 卡片内部光感效果 */
+.card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -50%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(
+        60deg,
+        transparent 0%,
+        var(--glass-highlight) 50%,
+        transparent 100%
+    );
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    transition: transform 0.7s ease-in-out;
+    pointer-events: none;
+}
+
+html.dark-mode .card {
+    background: var(--glass-background-dark);
+    border-color: var(--glass-border-dark);
+    box-shadow: var(--glass-shadow), var(--card-inner-shadow-dark);
+}
+
+.card:hover {
+    transform: scale(var(--hover-scale));
+    backdrop-filter: blur(calc(var(--blur-amount) * 1.5));
+    -webkit-backdrop-filter: blur(calc(var(--blur-amount) * 1.5));
+    box-shadow: var(--glass-shadow), var(--box-shadow-hover), var(--card-inner-shadow);
+}
+
+.card:hover::after {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+}
+
+html.dark-mode .card:hover {
+    box-shadow: var(--glass-shadow), var(--box-shadow-hover), var(--card-inner-shadow-dark);
+}
+
+.card ul {
+    list-style: none;
+    padding-left: 10px;
+    margin-top: 10px;
+}
+
+.card ul li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+/* 固定位置按钮 - 增强玻璃效果 */
+.back-to-top-button,
+.back-to-bottom-button,
+.dark-mode-toggle {
+    position: fixed;
+    background: var(--primary-color);
+    backdrop-filter: blur(var(--blur-amount));
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    border: var(--glass-border-width) solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    color: #fff;
+    width: var(--button-width);
+    height: var(--button-height);
+    font-size: var(--button-size);
+    cursor: pointer;
+    border-radius: var(--button-radius);
+    margin-top: 5px;
+    right: 20px;
+    transition: var(--button-transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* 按钮光感效果 */
+.back-to-top-button::after,
+.back-to-bottom-button::after,
+.dark-mode-toggle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -50%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(
+        60deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.2) 50%,
+        transparent 100%
+    );
+    transform: translateX(-100%) rotate(45deg);
+    transition: transform 0.5s ease-in-out;
+    pointer-events: none;
+}
+
+html.dark-mode .back-to-top-button,
+html.dark-mode .back-to-bottom-button,
+html.dark-mode .dark-mode-toggle {
+    background: var(--dark-mode-color);
+    border-color: var(--glass-border-dark);
+}
+
+.back-to-top-button { bottom: 105px; }
+.back-to-bottom-button { bottom: 65px; }
+.dark-mode-toggle { bottom: 25px; }
+
+.back-to-top-button:hover,
+.back-to-bottom-button:hover,
+.dark-mode-toggle:hover {
+    background: var(--secondary-color);
+    transform: scale(1.05);
+}
+
+.back-to-top-button:hover::after,
+.back-to-bottom-button:hover::after,
+.dark-mode-toggle:hover::after {
+    transform: translateX(100%) rotate(45deg);
+}
+
+.back-to-top-button:active,
+.back-to-bottom-button:active,
+.dark-mode-toggle:active {
+    background: var(--tertiary-color);
+}
+
+html.dark-mode .back-to-top-button:hover,
+html.dark-mode .back-to-bottom-button:hover,
+html.dark-mode .dark-mode-toggle:hover {
+    background-color: var(--dark-mode-hover);
+}
+
+html.dark-mode .back-to-top-button:active,
+html.dark-mode .back-to-bottom-button:active,
+html.dark-mode .dark-mode-toggle:active {
+    background-color: var(--dark-mode-active);
+}

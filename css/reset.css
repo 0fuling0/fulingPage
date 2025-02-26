@@ -1,0 +1,62 @@
+/*---------- 2. 全局样式与重置 ----------*/
+body, h1, h2, h3, p, ul {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    font-smoothing: always;
+}
+
+@font-face {
+    font-family: 'LXGWWenKaiGBScreen';
+    src: local('LXGWWenKaiGBScreen'),
+         url('https://gcore.jsdelivr.net/gh/0fuling0/mysource@main/fonts/LXGWWenKaiGBScreen.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+body {
+    min-height: 100vh;
+    font-family: 'LXGWWenKaiGBScreen', sans-serif;
+    color: var(--font-color);
+    background-color: var(--background-color);
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.3s ease, color 0.3s ease, background-image 1.5s ease;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(5px);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: -1;
+}
+
+html.dark-mode::before {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+html.dark-mode body::before {
+    filter: brightness(0.6);
+}
+
+input, button, textarea {
+    font-family: inherit;
+    color: inherit;
+}

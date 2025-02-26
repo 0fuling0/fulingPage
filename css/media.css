@@ -1,0 +1,62 @@
+/*---------- 6. 媒体查询 ----------*/
+@media (max-width: 1320px) {
+    header, footer {
+        margin-left: 10px;
+        margin-right: 10px;
+        width: calc(100% - 20px);
+    }
+}
+
+@media (min-width: 1340px) {
+    header, main.container {
+        margin-left: auto;
+        margin-right: auto;
+        width: 1300px;
+    }
+}
+
+@media (max-width: 720px) {
+    main {
+        column-count: 1;
+    }
+}
+
+@media (min-width: 721px) and (max-width: 1200px) {
+    main {
+        column-count: 2;
+    }
+}
+
+@media (min-width: 1201px) {
+    main {
+        column-count: 3;
+    }
+}
+
+@media screen and (max-width: 512px) {
+    .cardItem.active .grid-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media screen and (min-width: 513px) and (max-width: 600px) {
+    .cardItem.active .grid-container {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .search-options {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media screen and (min-width: 601px) and (max-width: 900px) {
+    .cardItem.active .grid-container {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media screen and (min-width: 901px) {
+    .cardItem.active .grid-container {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}

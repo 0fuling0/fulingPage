@@ -1,0 +1,559 @@
+/*---------- 5. 功能卡片样式 ----------*/
+/* 个人档案卡片 */
+.profile img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.profile img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .profile img {
+    filter: brightness(0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.card.profile {
+    display: flex;
+    align-items: center;
+}
+
+.profile-info {
+    flex-grow: 1;
+}
+
+.buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 12px;
+    align-items: flex-end;
+}
+
+.buttons a {
+    text-decoration: none;
+}
+
+.buttons a:hover {
+    border-bottom: none;
+}
+
+/* 一言与时钟卡片 */
+.hitokoto-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.clock {
+    text-align: center;
+}
+
+.clock-date {
+    font-size: 1.5rem;
+    color: #313131;
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+html.dark-mode .clock-date {
+    color: #ccc;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.clock-time {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #333;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+html.dark-mode .clock-time {
+    color: #eee;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 项目卡片 */
+.about ul,
+.projects .project-list {
+    list-style: none;
+    padding: 0;
+}
+
+.about ul li {
+    margin-bottom: 10px;
+}
+
+.project {
+    margin-bottom: 20px;
+    transition: transform 0.3s ease;
+}
+
+.project:hover {
+    transform: translateX(5px);
+}
+
+.project a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #000;
+    transition: color 0.3s ease;
+}
+
+.project a span {
+    font-size: 1rem;
+}
+
+.project a:hover {
+    text-decoration: underline;
+    border-bottom: none;
+}
+
+html.dark-mode .project a {
+    color: #eeeeeede;
+}
+
+.project svg {
+    width: 24px;
+    height: 24px;
+    transition: transform 0.3s ease;
+}
+
+.project:hover svg {
+    transform: rotate(10deg);
+}
+
+/* 联系方式卡片 */
+.contact-options {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.contact-options a {
+    text-decoration: none;
+    color: #333;
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.contact-options a:hover {
+    transform: translateY(-3px);
+}
+
+.contact-options a i {
+    margin-right: 10px;
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.contact-options a:hover i {
+    transform: scale(1.2);
+}
+
+.contact-options a span {
+    font-size: 1rem;
+}
+
+contact-options a:hover {
+    text-decoration: underline;
+    border-bottom: none;
+}
+
+html.dark-mode .contact-options,
+html.dark-mode .contact-options a {
+    color: #eee;
+}
+
+/* 轮播图卡片 */
+.carousel-card {
+    position: relative;
+    padding-bottom: 210px;
+}
+
+.carousel-container {
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    right: -20px;
+    bottom: -20px;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--glass-background-dark);
+    box-shadow: var(--card-inner-shadow);
+}
+
+html.dark-mode .carousel-container {
+    background: var(--glass-background);
+    box-shadow: var(--card-inner-shadow-dark);
+}
+
+.carousel-img {
+    width: 100%;
+    height: 100%;
+    transform: scale(1);
+    opacity: 1;
+    filter: brightness(1.0);
+    transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+    object-fit: cover;
+}
+
+.prev-btn,
+.next-btn {
+    z-index: 2;
+    position: absolute;
+    bottom: -20px;
+    height: 250px;
+    font-size: 1.2rem;
+    background: var(--glass-background);
+    backdrop-filter: blur(var(--blur-amount));
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    color: var(--font-color);
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+    padding: 0px 10px;
+    overflow: hidden;
+}
+
+/* 按钮光感效果 */
+.prev-btn::after,
+.next-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -50%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(
+        60deg,
+        transparent 0%,
+        var(--glass-highlight) 50%,
+        transparent 100%
+    );
+    transform: translateX(-100%) rotate(45deg);
+    transition: transform 0.5s ease-in-out;
+    pointer-events: none;
+}
+
+html.dark-mode .prev-btn,
+html.dark-mode .next-btn {
+    background: var(--glass-background-dark);
+    border-color: var(--glass-border-dark);
+}
+
+.prev-btn {
+    left: -20px;
+    border-radius: 12px 0px 0px 12px;
+}
+
+.next-btn {
+    right: -20px;
+    border-radius: 0px 12px 12px 0px;
+}
+
+.prev-btn:hover,
+.next-btn:hover {
+    background-color: var(--glass-background);
+}
+
+.prev-btn:hover::after,
+.next-btn:hover::after {
+    transform: translateX(100%) rotate(45deg);
+}
+
+html.dark-mode .prev-btn:hover,
+html.dark-mode .next-btn:hover {
+    background-color: var(--glass-background-dark);
+}
+
+.carousel-indicators {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 3;
+}
+
+.carousel-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: background-color 0.3s ease, width 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.carousel-dot.active {
+    width: 20px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+html.dark-mode .carousel-dot {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+html.dark-mode .carousel-dot.active {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+/* 音乐卡片 */
+.card.music iframe {
+    filter: brightness(1.0);
+}
+
+html.dark-mode .card.music iframe {
+    filter: brightness(0.6);
+}
+
+.aplayer {
+    height: 100% !important;
+    margin: -20px !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+}
+
+.aplayer .aplayer-list ol li {
+    border-top: none !important;
+}
+
+.aplayer,
+.aplayer .aplayer-list ol li.aplayer-list-light,
+.aplayer .aplayer-lrc:before,
+.aplayer .aplayer-lrc:after {
+    background: transparent !important;
+}
+
+.aplayer .aplayer-list ol li .aplayer-list-author {
+    color: var(--font-color) !important;
+}
+
+.aplayer.aplayer-withlist .aplayer-info,
+div.aplayer-pic {
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .aplayer.aplayer-withlist .aplayer-info,
+html.dark-mode div.aplayer-pic {
+    box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+/* 搜索组件 */
+.search-container {
+    width: 100%;
+    text-align: center;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.search-input {
+    width: 60%;
+    border: none;
+    padding: 2px 0px 0px 12px;
+    outline: none;
+    font-size: 16px;
+    line-height: 40px;
+    background: var(--glass-background);
+    backdrop-filter: blur(var(--blur-amount));
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    border: 1px solid var(--glass-border);
+    color: var(--font-color);
+}
+
+.search-input::placeholder {
+    font-family: 'LXGWWenKaiGBScreen';
+}
+
+html.dark-mode .search-input {
+    background: var(--glass-background-dark);
+    border-color: var(--glass-border-dark);
+}
+
+.search-button {
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    padding: 17px;
+    cursor: pointer;
+    border-radius: 0 20px 20px 0;
+    outline: none;
+    transition: background-color 0.3s ease;
+    white-space: nowrap;
+}
+
+.search-button:hover {
+    background-color: var(--secondary-color);
+}
+
+.search-button:active {
+    background-color: var(--tertiary-color);
+}
+
+html.dark-mode .search-button {
+    background-color: var(--dark-mode-color);
+}
+
+html.dark-mode .search-button:hover {
+    background-color: var(--dark-mode-hover);
+}
+
+html.dark-mode .search-button:active {
+    background-color: var(--dark-mode-active);
+}
+
+.custom-select {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    padding: 0;
+}
+
+.select-styled {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    border: none;
+    padding: 0 9px;
+    border-radius: 20px 0 0 20px;
+    background: var(--glass-background);
+    backdrop-filter: blur(var(--blur-amount));
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    border: 1px solid var(--glass-border);
+    color: #000;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+}
+
+.select-styled:after {
+    display: none;
+}
+
+html.dark-mode .select-styled {
+    background: var(--glass-background-dark);
+    border-color: var(--glass-border-dark);
+    color: var(--font-color);
+}
+
+.search-options {
+    display: none;
+    position: absolute;
+    top: 105%;
+    left: 0;
+    right: auto;
+    border: none;
+    border-radius: 12px;
+    background-color: #fff;
+    z-index: 3;
+    grid-template-columns: repeat(4, 1fr);
+    grid-gap: 20px;
+}
+
+html.dark-mode .search-options {
+    background-color: #a0a0a0;
+}
+
+.search-option {
+    padding: 8px;
+    cursor: pointer;
+    color: #000;
+}
+
+.search-option:hover {
+    background-color: var(--hover-color);
+}
+
+/* 导航页卡片 */
+.cardContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin: auto;
+}
+
+.cardItem {
+    flex: 1;
+    display: none;
+    flex-direction: row;
+    padding: 0 auto;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.cardItem.active {
+    display: flex;
+    width: 87%;
+    height: 100%;
+    margin-bottom: 0;
+    margin-left: 3%;
+}
+
+.cardItem.active .grid-container {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 5px;
+    width: 100%;
+    height: 100%;
+}
+
+.cardItem.active .grid-item {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 10px;
+    text-decoration: none;
+    color: var(--font-color);
+    width: 100%;
+    height: 100%;
+}
+
+.icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    object-fit: contain;
+}
+
+.navButtons {
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+    width: 100%;
+    margin: 20px 0;
+}
+
+#navpage .card {
+    margin-bottom: 0;
+}

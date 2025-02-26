@@ -4,15 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>
-        if (location.hostname !== 'localhost' && location.protocol !== 'file:') {
-            document.head.insertAdjacentHTML('beforeend', '<base href="/home/">');
-        }
-    </script>
     <meta name="theme-color" id="theme-color-meta" content="">
     <meta name="description" content="">
     <title>loading...</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="main.css">
     <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/aplayer/1.10.1/APlayer.min.css" />
     <link rel="icon" type="image/webp" sizes="64x64"
         href="https://gcore.jsdelivr.net/gh/0fuling0/mysource@main/img/favicon.webp">
@@ -46,6 +41,7 @@
             }
         })();
     </script>
+    <script type="module" src="main.js"></script>
 </head>
 
 <body>
@@ -114,7 +110,6 @@
     <button id="backToBottom" class="back-to-bottom-button" aria-label="返回底部"><i class="fas fa-arrow-down"></i></button>
     <button id="darkModeToggle" class="dark-mode-toggle" onclick="toggleDarkMode()" aria-label="切换夜间模式"><i class="fas fa-moon"></i></button>
 
-    <script src="script.js" defer></script>
 </body>
 
 </html>
