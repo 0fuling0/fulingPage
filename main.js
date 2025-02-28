@@ -69,6 +69,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // 初始化站点配置
         siteInfo.initSiteWithConfig(config);
         
+        // 初始化网站运行时间
+        if (config.siteInfo && config.siteInfo.startDate) {
+            clock.initRuntimeInfo(config);
+        }
+        
         // 初始化背景图片
         if (config.backgroundImages && Array.isArray(config.backgroundImages.images)) {
             backgroundImage.setBackgroundImages(config.backgroundImages.images);

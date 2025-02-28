@@ -253,13 +253,19 @@ function renderHomepageCards(cards) {
                     <h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br>
                     <ul>
                         ${card.showVisits ? `
-                        <li><strong>本站总访问量：</strong><span id="busuanzi_value_site_pv">0</span> 次</li>
-                        <li><strong>本站总访客数：</strong><span id="busuanzi_value_site_uv">0</span> 人</li>
+                        <li><strong>本站总访问量：</strong><span id="busuanzi_value_site_pv">加载中...</span> 次</li>
+                        <li><strong>本站总访客数：</strong><span id="busuanzi_value_site_uv">加载中...</span> 人</li>
                         ` : ''}
-                        ${card.showRuntime ? `<li id="runtime-info-container"></li>` : ''}
+                        ${card.showRuntime ? `<li id="runtime-info-container"><strong>网站运行时间：</strong>加载中...</li>` : ''}
                     </ul>
                 `;
-                clock.initRuntimeInfo(window.siteConfig);
+                // 如果配置有startDate且显示运行时间，在DOM更新后更新运行时间
+                if (card.showRuntime && window.siteConfig?.siteInfo?.startDate) {
+                    // 使用requestAnimationFrame确保DOM已经更新
+                    requestAnimationFrame(() => {
+                        clock.updateRuntimeInfo(window.siteConfig.siteInfo.startDate);
+                    });
+                }
                 refreshBusuanzi();
                 break;
 
@@ -300,8 +306,9 @@ function renderHomepageCards(cards) {
  */
 function refreshBusuanzi() {
     const script = document.createElement('script');
-    script.src = 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
-    script.async = true;
+    script.src = 'https://npm.onmicrosoft.cn/penndu@16.0.0/bsz.js';
+    script.defer = true;
+    script.setAttribute('data-prefix', 'busuanzi_value');
     document.body.appendChild(script);
     
     script.onload = function() {

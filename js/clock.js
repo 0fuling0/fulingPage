@@ -44,64 +44,70 @@ function initClock() {
  * 更新网站运行时间信息
  * @param {string} startDate - 网站开始运行的日期
  */
-let runtimeInfo = {
-    startDateObj: null,
-    years: 0,
-    months: 0,
-    days: 0
-};
-
 function updateRuntimeInfo(startDate) {
-    if (!runtimeInfo.startDateObj) {
-        runtimeInfo.startDateObj = new Date(startDate);
+    if (!startDate) {
+        return;
     }
-
-    const currentDate = new Date();
-
-    let years = currentDate.getFullYear() - runtimeInfo.startDateObj.getFullYear();
-    let months = currentDate.getMonth() - runtimeInfo.startDateObj.getMonth();
-    let days = currentDate.getDate() - runtimeInfo.startDateObj.getDate();
-
-    if (days < 0) {
-        months--;
-        const previousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
-        days += previousMonth.getDate();
-    }
-
-    if (months < 0) {
-        years--;
-        months += 12;
-    }
-
-    if (years !== runtimeInfo.years || months !== runtimeInfo.months || days !== runtimeInfo.days) {
-        runtimeInfo.years = years;
-        runtimeInfo.months = months;
-        runtimeInfo.days = days;
-
+    
+    try {
+        const startDateObj = new Date(startDate);
+        if (isNaN(startDateObj.getTime())) {
+            return;
+        }
+        
+        const currentDate = new Date();
+        
+        // 计算年月日差异
+        let years = currentDate.getFullYear() - startDateObj.getFullYear();
+        let months = currentDate.getMonth() - startDateObj.getMonth();
+        let days = currentDate.getDate() - startDateObj.getDate();
+        
+        // 处理日期进位
+        if (days < 0) {
+            months--;
+            const previousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
+            days += previousMonth.getDate();
+        }
+        
+        // 处理月份进位
+        if (months < 0) {
+            years--;
+            months += 12;
+        }
+        
+        // 格式化显示字符串
         const yearString = years > 0 ? `${years} 年 ` : '';
         const monthString = months > 0 ? `${months} 月 ` : '';
         const dayString = `${days} 天`;
-
+        
+        // 更新DOM
         const runtimeInfoContainer = document.getElementById('runtime-info-container');
         if (runtimeInfoContainer) {
             runtimeInfoContainer.innerHTML = `
                 <strong>网站运行时间：</strong>
                 ${yearString}${monthString}${dayString}
             `;
+            return true;
         }
+        return false;
+    } catch (error) {
+        return false;
     }
 }
 
 /**
  * 初始化运行时间信息
+ * @param {Object} config - 网站配置对象
  */
 function initRuntimeInfo(config) {
-    if (config && config.siteInfo && config.siteInfo.startDate) {
-        updateRuntimeInfo(config.siteInfo.startDate);
-        setInterval(() => {
-            updateRuntimeInfo(config.siteInfo.startDate);
-        }, 60000); // 每分钟更新一次
+    if (!config || !config.siteInfo || !config.siteInfo.startDate) {
+        return;
     }
+    // 每天更新一次运行时间
+    setInterval(() => {
+        updateRuntimeInfo(startDate);
+    }, 86400000); // 24小时
+    
 }
 
 export default {
