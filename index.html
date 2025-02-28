@@ -16,6 +16,13 @@
     <script defer src="https://cdn.bootcdn.net/ajax/libs/aplayer/1.10.1/APlayer.min.js"></script>
     <script defer src="https://cdn.bootcdn.net/ajax/libs/meting/2.0.1/Meting.min.js"></script>
     <meta name="color-scheme" content="light dark">
+    <script>
+        let path = window.location.pathname;
+        let hash = window.location.hash;
+        if (!path.endsWith("/") && path !== "/index.html" && !path.includes(".")) {
+            window.location.href = path + "/" + hash;
+        }
+    </script>
     <script defer>
         (function() {
             let darkMode = false;
