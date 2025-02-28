@@ -71,13 +71,13 @@ function updateHeaderText(sectionId) {
     if (headerTextElement) {
         switch (sectionId) {
             case 'homepage':
-                headerTextElement.textContent = "Fuling's Homepage";
+                headerTextElement.textContent = window.siteConfig?.header?.title || "Homepage";
                 break;
             case 'navpage':
-                headerTextElement.textContent = "Fuling's Navigation";
+                headerTextElement.textContent = window.siteConfig?.header?.navTitle || "Navigation";
                 break;
             default:
-                headerTextElement.textContent = "Fuling's Homepage";
+                headerTextElement.textContent = "Homepage";
                 break;
         }
     }
