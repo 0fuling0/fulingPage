@@ -10,7 +10,7 @@
     outline: none;
     background-color: var(--primary-color);
     color: #fff;
-    transition: var(--button-transition);
+    transition: var(--button-transition), box-shadow 0.3s ease;
     position: relative;
     overflow: hidden;
 }
@@ -36,6 +36,7 @@
 .button:hover {
     background-color: var(--secondary-color);
     transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .button:hover::after {
@@ -64,6 +65,7 @@ html.dark-mode .button:active {
     padding: 10px 0;
     border: none;
     position: relative;
+    transition: all 0.3s ease;
 }
 
 .navButton::before {
@@ -81,8 +83,13 @@ html.dark-mode .button:active {
     background-color: var(--font-color);
 }
 
+.navButton:hover {
+    transform: translateY(-2px);
+}
+
 .navButton.current {
     font-weight: bold;
+    transform: scale(1.05);
 }
 
 .navButton.current::before {
@@ -108,7 +115,8 @@ html.dark-mode .navButton.current::before {
     transition: transform var(--hover-transition-time) cubic-bezier(0.165, 0.84, 0.44, 1),
                 background-color 0.3s ease,
                 backdrop-filter 0.3s ease,
-                box-shadow 0.3s ease;
+                box-shadow 0.3s ease,
+                border-color 0.3s ease;
     box-sizing: border-box;
     overflow: hidden;
 }
@@ -143,14 +151,30 @@ html.dark-mode .card {
     backdrop-filter: blur(calc(var(--blur-amount) * 1.5));
     -webkit-backdrop-filter: blur(calc(var(--blur-amount) * 1.5));
     box-shadow: var(--glass-shadow), var(--box-shadow-hover), var(--card-inner-shadow);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
 .card:hover::after {
     transform: translateX(100%) translateY(100%) rotate(45deg);
 }
 
+.card:active {
+    transform: scale(0.98);
+    box-shadow: var(--glass-shadow), var(--card-inner-shadow);
+}
+
 html.dark-mode .card:hover {
     box-shadow: var(--glass-shadow), var(--box-shadow-hover), var(--card-inner-shadow-dark);
+}
+
+.card.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
 }
 
 .card ul {
@@ -187,6 +211,8 @@ html.dark-mode .card:hover {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    opacity: 0.8;
+    z-index: 100;
 }
 
 /* 按钮光感效果 */
@@ -226,6 +252,8 @@ html.dark-mode .dark-mode-toggle {
 .dark-mode-toggle:hover {
     background: var(--secondary-color);
     transform: scale(1.05);
+    opacity: 1;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .back-to-top-button:hover::after,
@@ -250,4 +278,78 @@ html.dark-mode .back-to-top-button:active,
 html.dark-mode .back-to-bottom-button:active,
 html.dark-mode .dark-mode-toggle:active {
     background-color: var(--dark-mode-active);
+}
+
+/* 添加提示工具 */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]:before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%) scale(0.8);
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+[data-tooltip]:hover:before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) scale(1);
+}
+
+/* 标签样式 */
+.tag {
+    display: inline-block;
+    padding: 3px 8px;
+    margin: 2px;
+    border-radius: 12px;
+    background: var(--primary-color);
+    color: white;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.tag:hover {
+    transform: scale(1.1);
+    background: var(--secondary-color);
+}
+
+html.dark-mode .tag {
+    background: var(--dark-mode-color);
+}
+
+html.dark-mode .tag:hover {
+    background: var(--dark-mode-hover);
+}
+
+/* 加载动画 */
+.loader {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 1s ease-in-out infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+html.dark-mode .loader {
+    border-top-color: var(--dark-mode-color);
 }
