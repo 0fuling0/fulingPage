@@ -15,7 +15,11 @@
     overflow: hidden;
 }
 
-.button::after {
+/* 新增统一规则 */
+.button::after,
+.back-to-top-button::after,
+.back-to-bottom-button::after,
+.dark-mode-toggle::after {
     content: '';
     position: absolute;
     top: 0;
@@ -187,27 +191,6 @@ html.dark-mode .card:hover {
     align-items: center;
     justify-content: center;
     overflow: hidden;
-}
-
-/* 按钮光感效果 */
-.back-to-top-button::after,
-.back-to-bottom-button::after,
-.dark-mode-toggle::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -50%;
-    width: 200%;
-    height: 100%;
-    background: linear-gradient(
-        60deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.2) 50%,
-        transparent 100%
-    );
-    transform: translateX(-100%) rotate(45deg);
-    transition: transform 0.5s ease-in-out;
-    pointer-events: none;
 }
 
 html.dark-mode .back-to-top-button,
