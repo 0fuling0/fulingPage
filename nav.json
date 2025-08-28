@@ -34,7 +34,7 @@
             "id": "card2",
             "title": "游戏",
             "items": [
-                { "name": "BYRUTOR", "url": "https://thebyrut.org/", "icon": "img/nav/b1.webp" },
+                { "name": "BYRUTOR", "url": "https://byrutgame.org", "icon": "img/nav/b1.webp" },
                 { "name": "FREETP", "url": "https://freetp.org/", "icon": "img/nav/b2.webp" },
                 { "name": "Switch520", "url": "https://www.gamer520.com/", "icon": "img/nav/b3.webp" },
                 { "name": "初音的青葱", "url": "https://www.xygalgame.com/", "icon": "img/nav/b4.webp" },
