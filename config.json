@@ -10,7 +10,7 @@
         "links": [
             {
                 "text": "博客",
-                "url": "https://www.fuling.me/",
+                "url": "https://www.fuling.cloudns.org/",
                 "icon": "fa-solid fa-blog"
             },
             {
@@ -105,13 +105,13 @@
                 "list": [
                     {
                         "name": "个人主页",
-                        "url": "https://www.fuling.me/home/",
+                        "url": "https://www.fuling.cloudns.org/home/",
                         "icon": "fab fa-github",
                         "description": "具备加载效果、背景图轮播、PWA支持、深色模式、时钟、一言格言轮播以及响应式布局的卡片式个人主页。"
                     },
                     {
                         "name": "个人博客",
-                        "url": "https://www.fuling.me/",
+                        "url": "https://www.fuling.cloudns.org/",
                         "icon": "fab fa-github",
                         "description": "简单的Hexo博客，使用volantis主题。"
                     }
@@ -151,7 +151,7 @@
                     "bilibili": "https://space.bilibili.com/620545781",
                     "message": "https://message.bilibili.com/?spm_id_from=333.999.0.0#/whisper/mid620545781",
                     "github": "https://github.com/0fuling0",
-                    "email": "mailto:chen@fuling.me"
+                    "email": "mailto:chen@fuling.cloudns.org"
                 }
             },
             {
@@ -182,7 +182,7 @@
                 "icon": "fa-comments",
                 "title": "留言",
                 "settings": {
-                    "envId": "https://twikoo.fuling.me/"
+                    "envId": "https://twikoo.fuling.cloudns.org/"
                 }
             }
         ]
