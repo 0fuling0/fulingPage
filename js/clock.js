@@ -1,20 +1,50 @@
+// DOM 缓存
+let cachedClockElements = null;
+let cachedDateFormat = null;
+let cachedTimeFormat = null;
+
+/**
+ * 刷新时钟元素缓存
+ */
+function refreshClockCache() {
+    cachedClockElements = document.querySelectorAll('.clock');
+}
+
 /**
  * 更新时钟显示
  */
 function updateClock() {
-    const now = new Date();
-    const options = {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    };
-    const dateString = now.toLocaleDateString('zh-CN', options);
-    const timeString = now.toLocaleTimeString('zh-CN', {
-        hour12: false
-    });
+    // 获取时钟元素（每次都重新获取以支持动态添加的元素）
+    const clockElements = document.querySelectorAll('.clock');
+    if (clockElements.length === 0) return;
     
-    document.querySelectorAll('.clock').forEach(clockElement => {
+    // 更新缓存
+    cachedClockElements = clockElements;
+    
+    // 缓存日期格式化选项
+    if (!cachedDateFormat) {
+        cachedDateFormat = new Intl.DateTimeFormat('zh-CN', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+    
+    if (!cachedTimeFormat) {
+        cachedTimeFormat = new Intl.DateTimeFormat('zh-CN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+    }
+    
+    const now = new Date();
+    const dateString = cachedDateFormat.format(now);
+    const timeString = cachedTimeFormat.format(now);
+    
+    clockElements.forEach(clockElement => {
         let dateElement = clockElement.querySelector('.clock-date');
         let timeElement = clockElement.querySelector('.clock-time');
 

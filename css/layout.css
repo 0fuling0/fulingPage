@@ -1,159 +1,320 @@
-/*---------- 3. 布局组件 ----------*/
+/*---------- 3. 布局组件 - Modern Aero 2.0 ----------*/
 /* 容器通用样式 */
 .container {
-    max-width: 1300px;
-    margin: 20px auto;
+    max-width: 1376px;
+    margin: 24px auto;
     overflow: visible;
     flex: 1;
     position: relative;
-    padding: 10px;
+    padding: 12px;
 }
 
-/* 玻璃态通用样式 - 增强玻璃效果 */
+/* 现代玻璃态通用样式 */
 .glass-effect {
     background: var(--glass-background);
     backdrop-filter: blur(var(--blur-amount));
     -webkit-backdrop-filter: blur(var(--blur-amount));
     border: var(--glass-border-width) solid var(--glass-border);
-    box-shadow: var(--glass-shadow), var(--card-inner-shadow);
-    transition: transform var(--hover-transition-time) cubic-bezier(0.165, 0.84, 0.44, 1), 
-                background-color 0.3s ease,
-                backdrop-filter 0.3s ease,
-                box-shadow 0.3s ease;
+    box-shadow: var(--glass-shadow);
+    transition: all var(--transition-normal);
     position: relative;
     overflow: hidden;
+    border-radius: var(--card-radius);
 }
 
-/* 添加光感效果 */
-.glass-effect::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -50%;
-    width: 200%;
-    height: 100%;
-    background: linear-gradient(
-        60deg,
-        transparent 0%,
-        var(--glass-highlight) 50%,
-        transparent 100%
-    );
-    transform: translateX(-100%) translateY(-100%) rotate(45deg);
-    transition: transform 0.7s ease-in-out;
-    pointer-events: none;
-}
-
-.glass-effect:hover::after {
-    transform: translateX(100%) translateY(100%) rotate(45deg);
-}
-
-html.dark-mode .glass-effect {
-    background: var(--glass-background-dark);
-    border-color: var(--glass-border-dark);
-    box-shadow: var(--glass-shadow), var(--card-inner-shadow-dark);
-}
-
-/* 头部导航 */
-header {
-    padding: 3px 0 9px;
-    text-align: center;
-    box-shadow: var(--glass-shadow), var(--card-inner-shadow);
-    background: var(--glass-background);
-    width: calc(100% - 20px);
-    max-width: 1300px;
-    margin: 0 auto 10px;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    border-radius: 0 0 12px 12px;
-    backdrop-filter: blur(var(--blur-amount));
-    -webkit-backdrop-filter: blur(var(--blur-amount));
-    border: var(--glass-border-width) solid var(--glass-border);
-    transition: transform var(--hover-transition-time) cubic-bezier(0.165, 0.84, 0.44, 1), 
-                background-color 0.3s ease;
-    box-sizing: border-box;
-    overflow: hidden;
-}
-
-html.dark-mode header {
-    background: var(--glass-background-dark);
-    border-color: var(--glass-border-dark);
-    box-shadow: var(--glass-shadow), var(--card-inner-shadow-dark);
-}
-
-header p.motto {
-    margin-bottom: 10px;
-}
-
-header a {
-    color: var(--font-color);
-    text-decoration: none;
-    margin: 0 10px;
-    transition: color 0.3s ease;
-}
-
-header a:hover {
-    color: var(--font-color);
-    border-bottom: 2px solid var(--font-color);
-}
-
-/* 光感效果 */
-header::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -50%;
-    width: 200%;
-    height: 100%;
-    background: linear-gradient(
-        60deg,
-        transparent 0%,
-        var(--glass-highlight) 50%,
-        transparent 100%
-    );
-    transform: translateX(-100%) translateY(-100%) rotate(45deg);
-    transition: transform 0.7s ease-in-out;
-    pointer-events: none;
-}
-
-header:hover {
-    transform: scale(var(--hover-scale));
-}
-
-header:hover::after {
-    transform: translateX(100%) translateY(100%) rotate(45deg);
-}
-
-/* 轻微内阴影效果，增加深度感 */
-header::before, .card::before, footer::before {
+/* 现代顶部柔光效果 */
+.glass-effect::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    bottom: 0;
-    border-radius: 12px;
-    box-shadow: var(--card-inner-shadow);
+    height: 100px;
+    background: var(--glass-highlight);
     pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    opacity: 0.7;
 }
 
-header:hover::before, .card:hover::before, footer:hover::before {
+/* 边框发光效果 - 悬浮时 */
+.glass-effect::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: linear-gradient(
+        135deg,
+        rgba(59, 130, 246, 0.3) 0%,
+        transparent 50%,
+        rgba(139, 92, 246, 0.2) 100%
+    );
+    -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    padding: 1px;
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+    pointer-events: none;
+}
+
+.glass-effect:hover::after {
     opacity: 1;
 }
 
-html.dark-mode header::before, 
-html.dark-mode .card::before, 
-html.dark-mode footer::before {
-    box-shadow: var(--card-inner-shadow-dark);
+html.dark-mode .glass-effect {
+    background: var(--glass-background-dark);
+    border-color: var(--glass-border-dark);
+}
+
+/* ========== 现代风格头部导航 ========== */
+header {
+    padding: 0;
+    text-align: center;
+    box-shadow: var(--glass-shadow);
+    background: var(--glass-background);
+    width: 100%;
+    max-width: none;
+    margin: 0 0 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-radius: 0 0 var(--card-radius) var(--card-radius);
+    backdrop-filter: blur(var(--blur-amount-lg));
+    -webkit-backdrop-filter: blur(var(--blur-amount-lg));
+    border: var(--glass-border-width) solid var(--glass-border);
+    border-top: none;
+    transition: all var(--transition-normal), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+    overflow: visible;
+}
+
+/* 头部滚动隐藏状态 */
+header.header-hidden {
+    transform: translateY(-120%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* 头部内容容器 */
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    position: relative;
+    z-index: 1;
+}
+
+/* 头部品牌区域 */
+.header-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.header-brand h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 2px;
+    letter-spacing: 0.03em;
+}
+
+.header-brand .motto {
+    font-size: 0.85rem;
+    opacity: 0.6;
+    margin: 0;
+}
+
+/* 头部导航区域 */
+.header-nav-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 头部导航 */
+.header-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.header-nav a {
+    color: var(--font-color);
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: var(--card-radius-sm);
+    transition: var(--transition-fast);
+    font-weight: 500;
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+    overflow: hidden;
+}
+
+.header-nav a i {
+    font-size: 0.9em;
+    transition: transform var(--transition-fast);
+}
+
+.header-nav a:hover {
+    color: var(--primary-color);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.header-nav a:hover i {
+    transform: scale(1.1);
+}
+
+.header-nav a:active {
+    transform: scale(0.97);
+}
+
+/* 导航激活状态 */
+.header-nav a.active {
+    color: #fff;
+    background: var(--button-gradient);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+html.dark-mode .header-nav a:hover {
+    background: rgba(96, 165, 250, 0.15);
+    color: var(--primary-color-light);
+}
+
+html.dark-mode .header-nav a.active {
+    background: var(--button-gradient);
+}
+
+/* Header 明暗切换按钮 - 与导航链接统一样式 */
+.header-dark-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border: none;
+    border-radius: var(--card-radius-sm);
+    background: transparent;
+    color: var(--font-color);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    margin-left: 4px;
+    flex-shrink: 0;
+}
+
+.header-dark-toggle:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--primary-color);
+}
+
+.header-dark-toggle:hover i {
+    transform: scale(1.1);
+}
+
+.header-dark-toggle:active {
+    transform: scale(0.97);
+}
+
+.header-dark-toggle i {
+    font-size: 0.95rem;
+    transition: transform var(--transition-fast);
+}
+
+html.dark-mode .header-dark-toggle:hover {
+    background: rgba(96, 165, 250, 0.15);
+    color: var(--primary-color-light);
+}
+
+/* 头部底部指示条 */
+.header-indicator {
+    height: 3px;
+    background: linear-gradient(90deg, 
+        transparent 0%,
+        var(--primary-color) 20%,
+        var(--secondary-color) 50%,
+        var(--accent-color) 80%,
+        transparent 100%
+    );
+    border-radius: 0 0 var(--card-radius) var(--card-radius);
+    opacity: 0.8;
+    transition: opacity var(--transition-normal);
+}
+
+header:hover .header-indicator {
+    opacity: 1;
+}
+
+/* 头部顶部柔光 */
+header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: var(--glass-highlight);
+    border-radius: var(--card-radius) var(--card-radius) 0 0;
+    pointer-events: none;
+    opacity: 0.6;
+    z-index: 0;
+}
+
+/* 头部边框渐变 - 悬浮时 */
+header::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: var(--card-radius);
+    background: linear-gradient(
+        135deg,
+        rgba(59, 130, 246, 0.4) 0%,
+        transparent 40%,
+        transparent 60%,
+        rgba(139, 92, 246, 0.3) 100%
+    );
+    -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    padding: 1px;
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+    pointer-events: none;
+    z-index: 0;
+}
+
+html.dark-mode header {
+    background: var(--glass-background-dark);
+    border-color: var(--glass-border-dark);
+}
+
+header:hover {
+    box-shadow: var(--glass-shadow-lg);
+}
+
+header:hover::after {
+    opacity: 1;
 }
 
 /* 主内容区 */
 main {
     background-color: transparent;
     column-count: 3;
-    column-gap: 20px;
+    column-gap: 24px;
     min-height: 0;
 }
 
@@ -162,64 +323,167 @@ main:has(#navpage:not([style*="display: none"])) {
 }
 
 main.container {
-    width: calc(100% - 20px);
-    max-width: 1300px;
-    margin: 10px auto;
+    width: calc(100% - 24px);
+    max-width: 1376px;
+    margin: 16px auto;
 }
 
 .full {
     column-count: 1;
 }
 
-/* 页脚 */
+/* ========== 现代风格页脚 ========== */
 footer {
-    padding: 10px;
+    padding: 0;
     text-align: center;
     box-shadow: var(--glass-shadow);
-    background: var(--glass-background);
-    width: 100%;
-    max-width: 1300px;
-    margin: 10px auto 0;
+    background: var(--footer-background);
+    width: calc(100% - 24px);
+    max-width: 1376px;
+    margin: 16px auto 0;
     border-radius: var(--footer-border-radius);
-    backdrop-filter: blur(var(--blur-amount));
-    -webkit-backdrop-filter: blur(var(--blur-amount));
+    backdrop-filter: blur(var(--blur-amount-lg));
+    -webkit-backdrop-filter: blur(var(--blur-amount-lg));
     border: var(--glass-border-width) solid var(--glass-border);
-    transition: transform var(--hover-transition-time) cubic-bezier(0.165, 0.84, 0.44, 1), 
-                background-color 0.3s ease;
+    border-bottom: none;
+    transition: all var(--transition-normal);
     box-sizing: border-box;
     position: relative;
     overflow: hidden;
 }
 
-html.dark-mode footer {
-    background: var(--glass-background-dark);
-    border-color: var(--glass-border-dark);
-    box-shadow: var(--glass-shadow), var(--card-inner-shadow-dark);
+/* 页脚内容容器 */
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 32px;
+    position: relative;
+    z-index: 1;
 }
 
-footer:hover {
-    transform: scale(var(--hover-scale));
+/* 页脚信息区 */
+.footer-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
 }
 
-/* 页脚光感效果 */
-footer::after {
+.footer-info .copyright {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin: 0;
+}
+
+.footer-info .runtime {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.footer-info .runtime span {
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* 页脚链接区 */
+.footer-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.footer-links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: var(--font-color);
+    background: rgba(255, 255, 255, 0.1);
+    transition: var(--transition-fast);
+    text-decoration: none;
+}
+
+.footer-links a:hover {
+    background: var(--button-gradient);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.footer-links a:active {
+    transform: translateY(0);
+}
+
+html.dark-mode .footer-links a {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+html.dark-mode .footer-links a:hover {
+    background: var(--button-gradient);
+    box-shadow: 0 4px 12px rgba(96, 165, 250, 0.25);
+}
+
+/* 页脚顶部柔光 */
+footer::before {
     content: '';
     position: absolute;
     top: 0;
-    left: -50%;
-    width: 200%;
-    height: 100%;
-    background: linear-gradient(
-        60deg,
-        transparent 0%,
-        var(--glass-highlight) 50%,
-        transparent 100%
-    );
-    transform: translateX(-100%) translateY(-100%) rotate(45deg);
-    transition: transform 0.7s ease-in-out;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: var(--glass-highlight);
+    border-radius: var(--footer-border-radius);
     pointer-events: none;
+    opacity: 0.5;
+    z-index: 0;
+}
+
+/* 页脚边框渐变 - 悬浮时 */
+footer::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: var(--footer-border-radius);
+    background: linear-gradient(
+        135deg,
+        rgba(59, 130, 246, 0.3) 0%,
+        transparent 50%,
+        rgba(6, 182, 212, 0.2) 100%
+    );
+    -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    padding: 1px;
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+    pointer-events: none;
+    z-index: 0;
+}
+
+html.dark-mode footer {
+    background: var(--footer-background);
+    border-color: var(--glass-border-dark);
+}
+
+footer:hover {
+    box-shadow: var(--glass-shadow-lg);
 }
 
 footer:hover::after {
-    transform: translateX(100%) translateY(100%) rotate(45deg);
+    opacity: 1;
 }

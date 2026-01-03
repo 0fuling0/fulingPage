@@ -41,23 +41,23 @@ function initSiteWithConfig(config) {
                         const i = document.createElement('i');
                         i.className = link.icon;
                         a.appendChild(i);
-                        a.appendChild(document.createTextNode(link.text));
+                        // 添加空格分隔图标和文字
+                        a.appendChild(document.createTextNode(' ' + link.text));
                     } else {
                         a.textContent = link.text;
                     }
                     if (link.onclick) a.setAttribute('onclick', link.onclick);
+                    // 为外部链接添加 target="_blank"
+                    if (link.url && !link.url.startsWith('#')) {
+                        a.setAttribute('target', '_blank');
+                        a.setAttribute('rel', 'noopener noreferrer');
+                    }
                     linksContainer.appendChild(a);
                 });
             }
         }
         
-        // 设置页脚信息
-        if (config.footer) {
-            const footerP = document.querySelector('footer p');
-            if (footerP) {
-                footerP.innerHTML = config.footer.copyright;
-            }
-        }
+        // 页脚版权信息现在由 headerFooter 模块处理
         
         // 初始化音乐播放器
         if (config.music && config.music.type === 'meting') {
@@ -189,8 +189,12 @@ function renderHomepageCards(cards) {
                 section.innerHTML = `
                     <h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br><br>
                     <div class="carousel-card">
-                        <button class="next-btn">❯</button>
-                        <button class="prev-btn">❮</button>
+                        <button class="carousel-btn prev-btn" aria-label="上一张">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="carousel-btn next-btn" aria-label="下一张">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
                         <div class="carousel-container">
                             <img class="carousel-img" alt="轮播图片" style="opacity: 0">
                         </div>

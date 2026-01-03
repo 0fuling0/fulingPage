@@ -1,4 +1,4 @@
-/*---------- 5. 功能卡片样式 ----------*/
+/*---------- 5. 功能卡片样式 - Modern Aero 2.0 ----------*/
 /* 个人档案卡片 */
 .profile img {
     width: 100px;
@@ -6,19 +6,25 @@
     border-radius: 50%;
     object-fit: cover;
     margin-right: 20px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        0 0 0 3px rgba(255, 255, 255, 0.5);
+    border: 3px solid rgba(255, 255, 255, 0.8);
+    transition: var(--transition-normal);
 }
 
 .profile img:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transform: scale(1.08) rotate(2deg);
+    box-shadow: 
+        0 8px 24px rgba(59, 130, 246, 0.25),
+        0 0 0 3px rgba(59, 130, 246, 0.3);
 }
 
 html.dark-mode .profile img {
-    filter: brightness(0.8);
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(96, 165, 250, 0.4);
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.3),
+        0 0 0 3px rgba(96, 165, 250, 0.2);
 }
 
 .card.profile {
@@ -33,7 +39,7 @@ html.dark-mode .profile img {
 .buttons {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
     margin-top: 12px;
     align-items: flex-end;
 }
@@ -59,31 +65,35 @@ html.dark-mode .profile img {
 }
 
 .clock-date {
-    font-size: 1.5rem;
-    color: #313131;
-    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.3);
+    font-size: 1.4rem;
+    color: var(--font-color);
+    opacity: 0.7;
+    font-weight: 500;
 }
 
 html.dark-mode .clock-date {
-    color: #ccc;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    color: var(--font-color);
 }
 
 .clock-time {
-    font-size: 4rem;
-    font-weight: bold;
-    color: #333;
-    margin-top: 10px;
+    font-size: 3.5rem;
+    font-weight: 700;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-top: 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.3);
+    letter-spacing: -0.02em;
 }
 
 html.dark-mode .clock-time {
-    color: #eee;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
 }
 
 /* 项目卡片 */
@@ -190,132 +200,245 @@ html.dark-mode .contact-options a {
 
 .carousel-container {
     position: absolute;
-    top: -20px;
-    left: -20px;
-    right: -20px;
-    bottom: -20px;
+    top: -24px;
+    left: -24px;
+    right: -24px;
+    bottom: -24px;
     overflow: hidden;
-    border-radius: 12px;
-    background: var(--glass-background-dark);
-    box-shadow: var(--card-inner-shadow);
+    border-radius: var(--card-radius);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.4) 0%, rgba(30, 41, 59, 0.3) 100%);
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.2);
 }
 
 html.dark-mode .carousel-container {
-    background: var(--glass-background);
-    box-shadow: var(--card-inner-shadow-dark);
+    background: linear-gradient(135deg, rgba(2, 6, 23, 0.6) 0%, rgba(15, 23, 42, 0.5) 100%);
+    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.3);
 }
 
 .carousel-img {
     width: 100%;
     height: 100%;
-    transform: scale(1);
     opacity: 1;
     filter: brightness(1.0);
-    transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
     object-fit: cover;
+    transform: scale(1);
+    transition: 
+        opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        filter 0.3s ease;
+    will-change: opacity, transform;
 }
 
-.prev-btn,
-.next-btn {
-    z-index: 2;
+/* 图片切换动画 - 淡出 */
+.carousel-img.fade-out {
+    opacity: 0;
+    transform: scale(1.05);
+    filter: brightness(1.2) blur(2px);
+}
+
+/* 图片切换动画 - 淡入 */
+.carousel-img.fade-in {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1.0);
+    animation: carouselFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 滑动切换动画 - 向左滑出 */
+.carousel-img.slide-out-left {
+    opacity: 0;
+    transform: translateX(-30%) scale(0.95);
+}
+
+/* 滑动切换动画 - 向右滑出 */
+.carousel-img.slide-out-right {
+    opacity: 0;
+    transform: translateX(30%) scale(0.95);
+}
+
+/* 滑动切换动画 - 从右滑入 */
+.carousel-img.slide-in-right {
+    animation: slideInRight 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 滑动切换动画 - 从左滑入 */
+.carousel-img.slide-in-left {
+    animation: slideInLeft 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes carouselFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20%) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20%) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+/* 轮播图切换按钮 - 现代圆形浮动设计 */
+.carousel-btn {
+    z-index: 4;
     position: absolute;
-    bottom: -20px;
-    height: 250px;
-    font-size: 1.2rem;
-    background: var(--glass-background);
-    backdrop-filter: blur(var(--blur-amount));
-    -webkit-backdrop-filter: blur(var(--blur-amount));
-    border: 1px solid var(--glass-border);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     cursor: pointer;
-    color: var(--font-color);
-    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
-    padding: 0px 10px;
-    overflow: hidden;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.1),
+        0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-/* 按钮光感效果 */
-.prev-btn::after,
-.next-btn::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -50%;
-    width: 200%;
-    height: 100%;
-    background: linear-gradient(
-        60deg,
-        transparent 0%,
-        var(--glass-highlight) 50%,
-        transparent 100%
-    );
-    transform: translateX(-100%) rotate(45deg);
-    transition: transform 0.5s ease-in-out;
-    pointer-events: none;
+.carousel-btn i {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-html.dark-mode .prev-btn,
-html.dark-mode .next-btn {
-    background: var(--glass-background-dark);
-    border-color: var(--glass-border-dark);
+/* 鼠标悬停时显示按钮 */
+.carousel-card:hover .carousel-btn {
+    opacity: 1;
 }
 
-.prev-btn {
-    left: -20px;
-    border-radius: 12px 0px 0px 12px;
+/* 触摸设备始终显示按钮 */
+@media (hover: none) {
+    .carousel-btn {
+        opacity: 0.9;
+    }
 }
 
-.next-btn {
-    right: -20px;
-    border-radius: 0px 12px 12px 0px;
+/* 按钮位置 */
+.carousel-btn.prev-btn {
+    left: -6px;
 }
 
-.prev-btn:hover,
-.next-btn:hover {
-    background-color: var(--glass-background);
+.carousel-btn.next-btn {
+    right: -6px;
 }
 
-.prev-btn:hover::after,
-.next-btn:hover::after {
-    transform: translateX(100%) rotate(45deg);
+/* 按钮悬停效果 */
+.carousel-btn:hover {
+    background: var(--button-gradient);
+    color: #fff;
+    border-color: transparent;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 
+        0 8px 25px rgba(99, 102, 241, 0.35),
+        0 0 20px var(--glow-color);
 }
 
-html.dark-mode .prev-btn:hover,
-html.dark-mode .next-btn:hover {
-    background-color: var(--glass-background-dark);
+.carousel-btn.prev-btn:hover i {
+    transform: translateX(-2px);
+}
+
+.carousel-btn.next-btn:hover i {
+    transform: translateX(2px);
+}
+
+/* 按钮激活效果 */
+.carousel-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+/* 深色模式 */
+html.dark-mode .carousel-btn {
+    background: rgba(30, 41, 59, 0.85);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.3),
+        0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+html.dark-mode .carousel-btn:hover {
+    background: var(--button-gradient);
+    color: #fff;
+    box-shadow: 
+        0 8px 30px rgba(99, 102, 241, 0.4),
+        0 0 25px var(--glow-color);
 }
 
 .carousel-indicators {
     position: absolute;
-    bottom: 10px;
+    bottom: 16px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 8px;
+    gap: 10px;
     z-index: 3;
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 20px;
 }
 
 .carousel-dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.5);
     cursor: pointer;
-    transition: background-color 0.3s ease, width 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.carousel-dot:hover {
+    background: rgba(255, 255, 255, 0.8);
+    transform: scale(1.2);
 }
 
 .carousel-dot.active {
-    width: 20px;
-    border-radius: 5px;
-    background: rgba(255, 255, 255, 0.9);
+    width: 24px;
+    border-radius: 4px;
+    background: var(--accent-gradient);
+    box-shadow: 0 0 12px var(--glow-color);
 }
 
 html.dark-mode .carousel-dot {
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(255, 255, 255, 0.35);
+}
+
+html.dark-mode .carousel-dot:hover {
+    background: rgba(255, 255, 255, 0.6);
 }
 
 html.dark-mode .carousel-dot.active {
-    background: rgba(0, 0, 0, 0.9);
+    background: var(--accent-gradient);
 }
 
 /* 音乐卡片 */
@@ -364,65 +487,116 @@ html.dark-mode div.aplayer-pic {
 /* 搜索组件 */
 .search-container {
     width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
     text-align: center;
     display: flex;
     align-items: stretch;
     justify-content: center;
+    overflow: hidden;
+    border-radius: var(--card-radius);
 }
 
 .search-input {
-    width: 60%;
+    flex: 1;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
     border: none;
-    padding: 2px 0px 0px 12px;
+    padding: 12px 16px;
     outline: none;
-    font-size: 16px;
-    line-height: 40px;
-    background: var(--glass-background);
+    font-size: 15px;
+    line-height: 1.5;
+    text-align: center;
+    background: var(--glass-background-solid);
     backdrop-filter: blur(var(--blur-amount));
     -webkit-backdrop-filter: blur(var(--blur-amount));
     border: 1px solid var(--glass-border);
+    border-left: none;
+    border-right: none;
     color: var(--font-color);
+    transition: var(--transition-normal);
+}
+
+.search-input::placeholder {
+    text-align: center;
+}
+
+.search-input:focus {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: inset 0 0 0 2px var(--primary-color);
 }
 
 .search-input::placeholder {
     font-family: 'LXGWWenKaiGBScreen';
+    color: var(--font-color);
+    opacity: 0.5;
 }
 
 html.dark-mode .search-input {
-    background: var(--glass-background-dark);
+    background: var(--glass-background-dark-solid);
     border-color: var(--glass-border-dark);
 }
 
+html.dark-mode .search-input:focus {
+    background: rgba(30, 41, 59, 0.95);
+}
+
+html.dark-mode .search-input::placeholder {
+    color: var(--font-color);
+    opacity: 0.4;
+}
+
 .search-button {
-    background-color: var(--primary-color);
+    background: var(--button-gradient);
     color: #fff;
     border: none;
-    padding: 17px;
+    padding: 12px 20px;
     cursor: pointer;
-    border-radius: 0 20px 20px 0;
+    border-radius: 0 var(--card-radius-sm) var(--card-radius-sm) 0;
     outline: none;
-    transition: background-color 0.3s ease;
+    transition: var(--transition-normal);
     white-space: nowrap;
+    box-shadow: var(--button-shadow);
+    position: relative;
+    overflow: hidden;
+}
+
+.search-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+    border-radius: inherit;
+    pointer-events: none;
 }
 
 .search-button:hover {
-    background-color: var(--secondary-color);
+    background: var(--button-gradient-hover);
+    transform: translateX(2px);
+    box-shadow: 
+        0 4px 15px rgba(59, 130, 246, 0.4),
+        0 2px 6px rgba(59, 130, 246, 0.2);
 }
 
 .search-button:active {
-    background-color: var(--tertiary-color);
+    transform: translateX(0);
+    background: var(--button-gradient-active);
 }
 
 html.dark-mode .search-button {
-    background-color: var(--dark-mode-color);
+    background: var(--button-gradient);
 }
 
 html.dark-mode .search-button:hover {
-    background-color: var(--dark-mode-hover);
+    background: var(--button-gradient-hover);
+    box-shadow: 
+        0 4px 15px rgba(96, 165, 250, 0.3),
+        0 2px 6px rgba(96, 165, 250, 0.15);
 }
 
 html.dark-mode .search-button:active {
-    background-color: var(--dark-mode-active);
+    background: var(--button-gradient-active);
 }
 
 .custom-select {
@@ -435,20 +609,26 @@ html.dark-mode .search-button:active {
 .select-styled {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     width: 100%;
-    border: none;
-    padding: 0 9px;
-    border-radius: 20px 0 0 20px;
-    background: var(--glass-background);
+    padding: 12px 16px;
+    border-radius: var(--card-radius-sm) 0 0 var(--card-radius-sm);
+    background: var(--glass-background-solid);
     backdrop-filter: blur(var(--blur-amount));
     -webkit-backdrop-filter: blur(var(--blur-amount));
     border: 1px solid var(--glass-border);
-    color: #000;
+    color: var(--font-color);
     outline: none;
     cursor: pointer;
     position: relative;
     z-index: 1;
+    transition: var(--transition-normal);
+    font-weight: 500;
+}
+
+.select-styled:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: var(--primary-color);
 }
 
 .select-styled:after {
@@ -456,37 +636,59 @@ html.dark-mode .search-button:active {
 }
 
 html.dark-mode .select-styled {
-    background: var(--glass-background-dark);
+    background: var(--glass-background-dark-solid);
     border-color: var(--glass-border-dark);
-    color: var(--font-color);
+}
+
+html.dark-mode .select-styled:hover {
+    background: rgba(96, 165, 250, 0.15);
+    border-color: var(--primary-color-light);
 }
 
 .search-options {
     display: none;
     position: absolute;
-    top: 105%;
+    top: calc(100% + 8px);
     left: 0;
     right: auto;
-    border: none;
-    border-radius: 12px;
-    background-color: #fff;
-    z-index: 3;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--card-radius-sm);
+    background: var(--glass-background-solid);
+    backdrop-filter: blur(var(--blur-amount-lg));
+    -webkit-backdrop-filter: blur(var(--blur-amount-lg));
+    z-index: 100;
     grid-template-columns: repeat(4, 1fr);
-    grid-gap: 20px;
+    grid-gap: 8px;
+    padding: 8px;
+    box-shadow: var(--glass-shadow-lg);
 }
 
 html.dark-mode .search-options {
-    background-color: #a0a0a0;
+    background: var(--glass-background-dark-solid);
+    border-color: var(--glass-border-dark);
 }
 
 .search-option {
-    padding: 8px;
+    padding: 10px 14px;
     cursor: pointer;
-    color: #000;
+    color: var(--font-color);
+    border-radius: 8px;
+    transition: var(--transition-fast);
+    font-weight: 500;
+}
+
+html.dark-mode .search-option {
+    color: var(--font-color);
 }
 
 .search-option:hover {
-    background-color: var(--hover-color);
+    background: var(--button-gradient);
+    color: #fff;
+}
+
+html.dark-mode .search-option:hover {
+    background: var(--button-gradient);
+    color: #fff;
 }
 
 /* 导航页卡片 */
@@ -504,7 +706,7 @@ html.dark-mode .search-options {
     display: none;
     flex-direction: row;
     padding: 0 auto;
-    border-radius: 12px;
+    border-radius: var(--card-radius);
     margin-bottom: 10px;
     box-sizing: border-box;
     overflow: hidden;
@@ -512,17 +714,17 @@ html.dark-mode .search-options {
 
 .cardItem.active {
     display: flex;
-    width: 87%;
+    width: 90%;
     height: 100%;
     margin-bottom: 0;
-    margin-left: 3%;
+    margin-left: 2%;
 }
 
 .cardItem.active .grid-container {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     grid-template-rows: repeat(4, 1fr);
-    gap: 5px;
+    gap: 8px;
     width: 100%;
     height: 100%;
 }
@@ -532,16 +734,26 @@ html.dark-mode .search-options {
     justify-content: flex-start;
     align-items: center;
     box-sizing: border-box;
-    padding: 10px;
+    padding: 12px;
     text-decoration: none;
     color: var(--font-color);
     width: 100%;
     height: 100%;
+    border-radius: var(--card-radius-sm);
+    transition: var(--transition-fast);
+}
+
+.cardItem.active .grid-item:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+html.dark-mode .cardItem.active .grid-item:hover {
+    background: rgba(96, 165, 250, 0.15);
 }
 
 .icon {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     margin-right: 10px;
     object-fit: contain;
 }
@@ -549,9 +761,9 @@ html.dark-mode .search-options {
 .navButtons {
     display: flex;
     justify-content: center;
-    gap: 50px;
+    gap: 16px;
     width: 100%;
-    margin: 20px 0;
+    margin: 24px 0;
 }
 
 #navpage .card {

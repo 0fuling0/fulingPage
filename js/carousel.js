@@ -1,186 +1,251 @@
 let currentCarouselIndex = 0;
 let carouselImages = [];
 let autoSlideInterval;
-let initialLoad = true; // 标记是否为初始加载
+let initialLoad = true;
+
+// DOM 元素缓存
+let cachedCarouselElements = {
+    img: null,
+    container: null,
+    indicators: null,
+    initialized: false
+};
+
+// 图片预加载缓存
+const imageCache = new Map();
+
+// 切换方向：1 = 向前（下一张），-1 = 向后（上一张），0 = 自动/直接
+let slideDirection = 0;
+
+// 是否正在切换中（防止动画冲突）
+let isTransitioning = false;
+
+/**
+ * 初始化 DOM 缓存
+ */
+function initCarouselCache() {
+    if (cachedCarouselElements.initialized) return;
+    cachedCarouselElements.img = document.querySelector('.carousel-img');
+    cachedCarouselElements.container = document.querySelector('.carousel-container');
+    cachedCarouselElements.indicators = document.querySelector('.carousel-indicators');
+    cachedCarouselElements.initialized = true;
+}
+
+/**
+ * 预加载图片
+ * @param {string} src - 图片URL
+ * @returns {Promise<HTMLImageElement>}
+ */
+function preloadImage(src) {
+    if (imageCache.has(src)) {
+        return Promise.resolve(imageCache.get(src));
+    }
+    
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            imageCache.set(src, img);
+            resolve(img);
+        };
+        img.onerror = reject;
+        img.src = src;
+    });
+}
+
+/**
+ * 预加载相邻图片
+ */
+function preloadAdjacentImages() {
+    if (carouselImages.length <= 1) return;
+    
+    const nextIndex = (currentCarouselIndex + 1) % carouselImages.length;
+    const prevIndex = (currentCarouselIndex - 1 + carouselImages.length) % carouselImages.length;
+    
+    // 异步预加载，不阻塞主线程
+    preloadImage(carouselImages[nextIndex]).catch(() => {});
+    preloadImage(carouselImages[prevIndex]).catch(() => {});
+}
+
+/**
+ * 清除所有动画类
+ * @param {HTMLElement} img - 图片元素
+ */
+function clearAnimationClasses(img) {
+    img.classList.remove(
+        'fade-out', 'fade-in',
+        'slide-out-left', 'slide-out-right',
+        'slide-in-left', 'slide-in-right'
+    );
+}
 
 /**
  * 初始化轮播图
  */
 function initCarousel() {
-    // 如果没有图片，不执行任何操作
     if (!carouselImages || carouselImages.length === 0) {
         console.warn('No carousel images available');
         return;
     }
 
-    const carouselImg = document.querySelector('.carousel-img');
+    initCarouselCache();
+    
+    const carouselImg = cachedCarouselElements.img;
     if (!carouselImg) {
-        console.warn('Carousel image element not found, waiting for homepage cards to render...');
+        console.warn('Carousel image element not found');
         return;
     }
     
-    // 预加载第一张图片并立即显示，无动画
+    // 预加载第一张图片并立即显示
     if (initialLoad) {
-        const firstImg = new Image();
-        firstImg.onload = function() {
-            carouselImg.src = carouselImages[0];
-            carouselImg.style.opacity = 1;
-            initialLoad = false; // 只在首次加载时执行
-            updateIndicators(0); // 更新指示器状态
-        };
-        firstImg.onerror = function() {
-            console.error('Failed to load initial carousel image:', carouselImages[0]);
-            // 如果第一张图片加载失败，尝试加载第二张
-            if (carouselImages.length > 1) {
-                currentCarouselIndex = 1;
-                showSlide(1);
-            } else {
-                // 显示默认图片或错误信息
-                carouselImg.alt = "图片加载失败";
-                carouselImg.style.background = "#f0f0f0";
-            }
-            initialLoad = false;
-        };
-        firstImg.src = carouselImages[0];
+        preloadImage(carouselImages[0])
+            .then(() => {
+                carouselImg.src = carouselImages[0];
+                carouselImg.style.opacity = 1;
+                initialLoad = false;
+                updateIndicators(0);
+                // 预加载相邻图片
+                preloadAdjacentImages();
+            })
+            .catch(() => {
+                console.error('Failed to load initial carousel image:', carouselImages[0]);
+                if (carouselImages.length > 1) {
+                    currentCarouselIndex = 1;
+                    showSlide(1);
+                } else {
+                    carouselImg.alt = "图片加载失败";
+                    carouselImg.style.background = "#f0f0f0";
+                }
+                initialLoad = false;
+            });
     } else {
-        // 非首次加载，正常显示当前幻灯片
         showSlide(currentCarouselIndex);
     }
     
-    // 初始化轮播图指示器
     initCarouselIndicators();
     
-    // 如果有多张图片，启动自动播放
     if (carouselImages.length > 1) {
         startAutoSlide();
     }
     
-    const carouselContainer = document.querySelector('.carousel-container');
-    if (carouselContainer) {
-        // 移除之前可能附加的事件监听器，避免重复
-        carouselContainer.removeEventListener('mouseenter', stopAutoSlide);
-        carouselContainer.removeEventListener('mouseleave', startAutoSlide);
-        
-        // 添加新的事件监听器
-        carouselContainer.addEventListener('mouseenter', stopAutoSlide);
-        carouselContainer.addEventListener('mouseleave', startAutoSlide);
-        
-        // 触摸事件支持
-        let touchStartX = 0;
-        let touchEndX = 0;
-        
-        // 移除可能存在的触摸事件监听器
-        carouselContainer.removeEventListener('touchstart', handleTouchStart);
-        carouselContainer.removeEventListener('touchend', handleTouchEnd);
-        
-        // 定义触摸处理函数
-        function handleTouchStart(e) {
-            touchStartX = e.changedTouches[0].screenX;
-        }
-        
-        function handleTouchEnd(e) {
-            touchEndX = e.changedTouches[0].screenX;
-            if (touchStartX - touchEndX > 50) {
-                // 向左滑动，显示下一张
-                nextSlide();
-            } else if (touchEndX - touchStartX > 50) {
-                // 向右滑动，显示上一张
-                prevSlide();
-            }
-        }
-        
-        // 添加新的触摸事件监听器
-        carouselContainer.addEventListener('touchstart', handleTouchStart, {passive: true});
-        carouselContainer.addEventListener('touchend', handleTouchEnd, {passive: true});
-    }
-    
-    // 确保按钮事件正确绑定
+    setupCarouselEvents();
     setupButtons();
 }
 
 /**
- * 设置轮播图按钮
+ * 设置轮播图事件（使用事件委托）
+ */
+function setupCarouselEvents() {
+    const container = cachedCarouselElements.container;
+    if (!container || container.dataset.eventsAttached) return;
+    
+    let touchStartX = 0;
+    
+    // 鼠标悬停控制自动播放
+    container.addEventListener('mouseenter', stopAutoSlide, { passive: true });
+    container.addEventListener('mouseleave', startAutoSlide, { passive: true });
+    
+    // 触摸滑动支持
+    container.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    
+    container.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].screenX;
+        const diff = touchStartX - touchEndX;
+        if (Math.abs(diff) > 50) {
+            diff > 0 ? nextSlide() : prevSlide();
+        }
+    }, { passive: true });
+    
+    container.dataset.eventsAttached = 'true';
+}
+
+/**
+ * 设置轮播图按钮（使用事件委托）
  */
 function setupButtons() {
-    // 移除可能存在的事件监听器
-    const nextBtns = document.querySelectorAll('.next-btn');
-    const prevBtns = document.querySelectorAll('.prev-btn');
+    // 在 carousel-card 上设置事件委托
+    const carouselCard = document.querySelector('.carousel-card');
+    if (!carouselCard || carouselCard.dataset.buttonsAttached) return;
     
-    nextBtns.forEach(btn => {
-        // 移除所有事件监听器
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
+    carouselCard.addEventListener('click', (e) => {
+        const target = e.target.closest('.carousel-btn');
+        if (!target) return;
         
-        // 添加新的事件监听器
-        newBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            nextSlide();
-        });
+        e.stopPropagation();
+        target.classList.contains('next-btn') ? nextSlide() : prevSlide();
     });
     
-    prevBtns.forEach(btn => {
-        // 移除所有事件监听器
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
-        
-        // 添加新的事件监听器
-        newBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            prevSlide();
-        });
-    });
+    carouselCard.dataset.buttonsAttached = 'true';
 }
 
 /**
  * 显示指定索引的幻灯片
  * @param {number} index - 幻灯片索引
+ * @param {number} direction - 切换方向：1 = 下一张，-1 = 上一张，0 = 自动
  */
-function showSlide(index) {
-    // 边界检查
+function showSlide(index, direction = 0) {
     if (!carouselImages || carouselImages.length === 0) return;
-    if (index < 0) index = carouselImages.length - 1;
-    if (index >= carouselImages.length) index = 0;
+    if (isTransitioning) return; // 防止动画冲突
     
-    const img = document.querySelector('.carousel-img');
+    // 边界处理
+    index = ((index % carouselImages.length) + carouselImages.length) % carouselImages.length;
+    
+    const img = cachedCarouselElements.img || document.querySelector('.carousel-img');
     if (!img) return;
     
+    const oldIndex = currentCarouselIndex;
     currentCarouselIndex = index;
     
-    // 如果是初始加载，直接设置图片，不使用动画效果
+    // 初始加载不使用动画
     if (initialLoad) {
         img.src = carouselImages[index];
         initialLoad = false;
         updateIndicators(index);
+        preloadAdjacentImages();
         return;
     }
     
-    const newImg = new Image();
-    newImg.onload = function() {
-        img.classList.add('fade-out');
-        
-        setTimeout(() => {
-            img.src = carouselImages[index];
-            img.classList.remove('fade-out');
-            img.classList.add('fade-in');
+    // 如果索引相同，不执行动画
+    if (oldIndex === index) return;
+    
+    isTransitioning = true;
+    
+    // 确定动画方向
+    const actualDirection = direction || (index > oldIndex ? 1 : -1);
+    
+    // 选择淡出类
+    const outClass = actualDirection > 0 ? 'slide-out-left' : 'slide-out-right';
+    const inClass = actualDirection > 0 ? 'slide-in-right' : 'slide-in-left';
+    
+    // 使用预加载的图片
+    preloadImage(carouselImages[index])
+        .then(() => {
+            // 清除旧动画类并添加淡出
+            clearAnimationClasses(img);
+            img.classList.add(outClass);
             
             setTimeout(() => {
-                img.classList.remove('fade-in');
-            }, 500);
-        }, 300); // 缩短淡出时间以提高响应速度
-    };
+                img.src = carouselImages[index];
+                clearAnimationClasses(img);
+                img.classList.add(inClass);
+                
+                // 动画结束后清理
+                setTimeout(() => {
+                    clearAnimationClasses(img);
+                    isTransitioning = false;
+                    preloadAdjacentImages();
+                }, 500);
+            }, 300);
+        })
+        .catch(() => {
+            console.error('Failed to load carousel image:', carouselImages[index]);
+            isTransitioning = false;
+            if (carouselImages.length > 1) {
+                setTimeout(() => nextSlide(), 500);
+            }
+        });
     
-    newImg.onerror = function() {
-        console.error('Failed to load carousel image:', carouselImages[index]);
-        // 尝试加载下一张图片
-        if (carouselImages.length > 1) {
-            setTimeout(() => nextSlide(), 500);
-        } else {
-            img.alt = "图片加载失败";
-            img.style.background = "#f0f0f0";
-        }
-    };
-    
-    newImg.src = carouselImages[index];
     updateIndicators(index);
 }
 
@@ -190,12 +255,11 @@ function showSlide(index) {
 function resetCarousel() {
     initialLoad = true;
     currentCarouselIndex = 0;
+    isTransitioning = false;
+    cachedCarouselElements.initialized = false;
     stopAutoSlide();
     
-    // 重新初始化
-    setTimeout(() => {
-        initCarousel();
-    }, 100);
+    setTimeout(initCarousel, 100);
 }
 
 /**
@@ -203,9 +267,10 @@ function resetCarousel() {
  */
 function nextSlide() {
     if (!carouselImages || carouselImages.length <= 1) return;
+    if (isTransitioning) return;
     
-    currentCarouselIndex = (currentCarouselIndex + 1) % carouselImages.length;
-    showSlide(currentCarouselIndex);
+    const nextIndex = (currentCarouselIndex + 1) % carouselImages.length;
+    showSlide(nextIndex, 1);
 }
 
 /**
@@ -213,9 +278,10 @@ function nextSlide() {
  */
 function prevSlide() {
     if (!carouselImages || carouselImages.length <= 1) return;
+    if (isTransitioning) return;
     
-    currentCarouselIndex = (currentCarouselIndex - 1 + carouselImages.length) % carouselImages.length;
-    showSlide(currentCarouselIndex);
+    const prevIndex = (currentCarouselIndex - 1 + carouselImages.length) % carouselImages.length;
+    showSlide(prevIndex, -1);
 }
 
 /**
@@ -281,8 +347,11 @@ function initCarouselIndicators() {
         // 添加点击事件
         dot.addEventListener('click', (e) => {
             e.stopPropagation();
-            currentCarouselIndex = index;
-            showSlide(index);
+            if (isTransitioning || index === currentCarouselIndex) return;
+            
+            // 根据索引判断方向
+            const direction = index > currentCarouselIndex ? 1 : -1;
+            showSlide(index, direction);
             
             // 点击指示器后重置自动播放
             stopAutoSlide();
@@ -293,6 +362,21 @@ function initCarouselIndicators() {
     });
     
     container.appendChild(indicators);
+}
+
+/**
+ * 跳转到指定幻灯片
+ * @param {number} index - 目标幻灯片索引
+ */
+function goToSlide(index) {
+    if (isTransitioning || index === currentCarouselIndex) return;
+    if (index < 0 || index >= carouselImages.length) return;
+    
+    const direction = index > currentCarouselIndex ? 1 : -1;
+    showSlide(index, direction);
+    
+    stopAutoSlide();
+    startAutoSlide();
 }
 
 /**
@@ -347,17 +431,6 @@ function getCurrentIndex() {
  */
 function getImageCount() {
     return carouselImages ? carouselImages.length : 0;
-}
-
-/**
- * 跳转到指定索引的幻灯片
- * @param {number} index - 目标幻灯片索引
- */
-function goToSlide(index) {
-    if (index >= 0 && index < carouselImages.length) {
-        currentCarouselIndex = index;
-        showSlide(index);
-    }
 }
 
 export default {

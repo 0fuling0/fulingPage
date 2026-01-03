@@ -1,56 +1,80 @@
+// DOM 元素缓存
+let cachedDarkModeElements = {
+    html: null,
+    metaTheme: null,
+    toggleBtn: null,
+    icon: null,
+    initialized: false
+};
+
+/**
+ * 初始化 DOM 缓存
+ */
+function initDarkModeCache() {
+    if (cachedDarkModeElements.initialized) return;
+    cachedDarkModeElements.html = document.documentElement;
+    cachedDarkModeElements.metaTheme = document.querySelector('meta[name="theme-color"]');
+    cachedDarkModeElements.toggleBtn = document.getElementById('darkModeToggle');
+    cachedDarkModeElements.icon = cachedDarkModeElements.toggleBtn?.querySelector('i');
+    cachedDarkModeElements.initialized = true;
+}
+
+// 主题颜色常量
+const THEME_COLORS = Object.freeze({
+    dark: 'rgba(38, 38, 38, 0.25)',
+    light: 'rgba(255, 255, 255, 0.4)'
+});
+
 /**
  * 初始化深色模式
  */
 function initDarkMode() {
-    let darkMode = false;
-    const html = document.documentElement;
-    const metaTheme = document.querySelector('meta[name="theme-color"]');
-    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    initDarkModeCache();
     
-    if (localStorage.getItem('darkMode') !== null) {
-        darkMode = localStorage.getItem('darkMode') === 'true';
-    } else if (prefersDarkMode) {
-        darkMode = true;
-    }
+    const { html, metaTheme } = cachedDarkModeElements;
+    const savedMode = localStorage.getItem('darkMode');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    if (darkMode) {
-        html.classList.add('dark-mode');
-        metaTheme.setAttribute('content', 'rgba(38, 38, 38, 0.25)');
-    } else {
-        html.classList.add('light');
-        metaTheme.setAttribute('content', 'rgba(255, 255, 255, 0.4)');
-    }
+    // 确定初始模式
+    const isDarkMode = savedMode !== null ? savedMode === 'true' : prefersDark;
+    
+    // 应用模式
+    html.classList.toggle('dark-mode', isDarkMode);
+    html.classList.toggle('light', !isDarkMode);
+    metaTheme?.setAttribute('content', isDarkMode ? THEME_COLORS.dark : THEME_COLORS.light);
 
     // 监听系统深色模式变化
-    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    darkModeMediaQuery.addEventListener('change', (e) => {
-        const isDarkMode = e.matches;
-        const html = document.documentElement;
-        
-        if (isDarkMode) {
-            html.classList.remove('light');
-            html.classList.add('dark-mode');
-        } else {
-            html.classList.remove('dark-mode');
-            html.classList.add('light');
-        }
-        setThemeColor();
-    });
+    window.matchMedia('(prefers-color-scheme: dark)')
+        .addEventListener('change', (e) => {
+            const { html } = cachedDarkModeElements;
+            html.classList.toggle('dark-mode', e.matches);
+            html.classList.toggle('light', !e.matches);
+            setThemeColor();
+            updateDarkModeIcon();
+        });
 }
 
 /**
  * 切换深色模式
  */
 function toggleDarkMode() {
-    const html = document.documentElement;
+    initDarkModeCache();
+    
+    const { html, icon } = cachedDarkModeElements;
     const isDarkMode = !html.classList.contains('dark-mode');
     
-    if (isDarkMode) {
-        html.classList.remove('light');
-        html.classList.add('dark-mode');
-    } else {
-        html.classList.remove('dark-mode');
-        html.classList.add('light');
+    html.classList.toggle('dark-mode', isDarkMode);
+    html.classList.toggle('light', !isDarkMode);
+    
+    // 切换图标
+    if (icon) {
+        icon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+    }
+    
+    // 同步更新 footer 图标
+    const footerIcon = document.getElementById('footerDarkIcon');
+    if (footerIcon) {
+        footerIcon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
     }
     
     localStorage.setItem('darkMode', isDarkMode);
@@ -58,19 +82,37 @@ function toggleDarkMode() {
 }
 
 /**
+ * 更新深色模式按钮图标
+ */
+function updateDarkModeIcon() {
+    initDarkModeCache();
+    
+    const { html, icon } = cachedDarkModeElements;
+    const isDarkMode = html.classList.contains('dark-mode');
+    
+    if (icon) {
+        icon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+    }
+    
+    // 同步更新 footer 图标
+    const footerIcon = document.getElementById('footerDarkIcon');
+    if (footerIcon) {
+        footerIcon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+    }
+}
+
+/**
  * 设置主题色
  */
 function setThemeColor() {
-    const metaTheme = document.querySelector('meta[name="theme-color"]');
-    if (document.documentElement.classList.contains('dark-mode')) {
-        metaTheme.setAttribute('content', 'rgba(38, 38, 38, 0.25)');
-    } else {
-        metaTheme.setAttribute('content', 'rgba(255, 255, 255, 0.4)');
-    }
+    const { html, metaTheme } = cachedDarkModeElements;
+    const isDark = html.classList.contains('dark-mode');
+    metaTheme?.setAttribute('content', isDark ? THEME_COLORS.dark : THEME_COLORS.light);
 }
 
 export default {
     initDarkMode,
     toggleDarkMode,
-    setThemeColor
+    setThemeColor,
+    updateDarkModeIcon
 };

@@ -1,59 +1,182 @@
-/*---------- 1. 变量与主题设置 ----------*/
+/*---------- 1. 变量与主题设置 - Modern Aero 2.0 ----------*/
 :root {
     /* 颜色方案 */
     color-scheme: light dark;
-    --background-color: #f0f2f5;
-    --font-color: #333333;
+    --background-color: #0f172a;
+    --font-color: #1e293b;
     
-    /* 玻璃效果 - 增强透明度和模糊参数 */
-    --glass-background: rgba(255, 255, 255, 0.35);
-    --glass-border: rgba(255, 255, 255, 0.4);
-    --glass-background-dark: rgba(38, 38, 38, 0.25);
-    --glass-border-dark: rgba(255, 255, 255, 0.12);
-    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.3);
-    --glass-highlight: rgba(255, 255, 255, 0.15);
+    /* Modern Glass 玻璃效果 - 更柔和的渐变 */
+    --glass-background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(241, 245, 249, 0.8) 50%,
+        rgba(226, 232, 240, 0.75) 100%
+    );
+    --glass-background-solid: rgba(248, 250, 252, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --glass-border-bottom: rgba(148, 163, 184, 0.3);
+    --glass-background-dark: linear-gradient(
+        135deg,
+        rgba(30, 41, 59, 0.9) 0%,
+        rgba(15, 23, 42, 0.85) 50%,
+        rgba(2, 6, 23, 0.8) 100%
+    );
+    --glass-background-dark-solid: rgba(30, 41, 59, 0.9);
+    --glass-border-dark: rgba(100, 116, 139, 0.3);
+    --glass-shadow: 
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -2px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(255, 255, 255, 0.05);
+    --glass-shadow-lg: 
+        0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -4px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    --glass-highlight: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.5) 0%,
+        rgba(255, 255, 255, 0.1) 40%,
+        transparent 60%
+    );
     --glass-border-width: 1px;
     --blur-amount: 20px;
+    --blur-amount-lg: 40px;
     
-    /* 玻璃卡片内部光影 */
-    --card-inner-shadow: inset 0 0 6px rgba(255, 255, 255, 0.6);
-    --card-inner-shadow-dark: inset 0 0 4px rgba(255, 255, 255, 0.25);
+    /* 现代内发光效果 */
+    --card-inner-shadow: 
+        inset 0 1px 1px rgba(255, 255, 255, 0.8),
+        inset 0 -1px 1px rgba(0, 0, 0, 0.05);
+    --card-inner-shadow-dark: 
+        inset 0 1px 1px rgba(255, 255, 255, 0.1),
+        inset 0 -1px 1px rgba(0, 0, 0, 0.2);
     
-    /* 颜色变量 */
-    --primary-color: rgba(46, 204, 113, 0.7);
-    --secondary-color: rgba(39, 174, 96, 0.7);
-    --tertiary-color: rgba(30, 130, 76, 0.7);
-    --dark-mode-color: rgba(22, 160, 133, 0.7);
-    --dark-mode-hover: rgba(26, 188, 156, 0.7);
-    --dark-mode-active: rgba(17, 122, 101, 0.7);
+    /* 现代主题色 - 更鲜艳的蓝紫渐变 */
+    --primary-color: #3b82f6;
+    --primary-color-light: #60a5fa;
+    --primary-color-dark: #2563eb;
+    --secondary-color: #8b5cf6;
+    --tertiary-color: #6366f1;
+    --accent-color: #06b6d4;
+    --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    --dark-mode-color: #60a5fa;
+    --dark-mode-hover: #93c5fd;
+    --dark-mode-active: #3b82f6;
+    
+    /* 现代按钮渐变 - 更流畅的过渡 */
+    --button-gradient: linear-gradient(
+        135deg,
+        #60a5fa 0%,
+        #3b82f6 50%,
+        #2563eb 100%
+    );
+    --button-gradient-hover: linear-gradient(
+        135deg,
+        #93c5fd 0%,
+        #60a5fa 50%,
+        #3b82f6 100%
+    );
+    --button-gradient-active: linear-gradient(
+        135deg,
+        #3b82f6 0%,
+        #2563eb 50%,
+        #1d4ed8 100%
+    );
+    --button-border: rgba(59, 130, 246, 0.5);
+    --button-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        0 1px 2px -1px rgba(0, 0, 0, 0.1);
 
-    /* 元素属性 */
-    --footer-background: rgba(255, 255, 255, 0.6);
-    --footer-border-radius: 12px 12px 0 0;
-    --footer-transition: transform 0.3s ease-in-out, background-color 0.3s ease;
+    /* 元素属性 - 更大的圆角 */
+    --footer-background: linear-gradient(
+        135deg,
+        rgba(248, 250, 252, 0.9) 0%,
+        rgba(241, 245, 249, 0.85) 100%
+    );
+    --footer-border-radius: 24px 24px 0 0;
+    --footer-transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     
-    --button-width: 32px;
-    --button-height: 32px;
+    --button-width: 40px;
+    --button-height: 40px;
     --button-size: 1rem;
     --button-radius: 12px;
-    --button-transition: background-color 0.3s ease, transform 0.2s ease;
+    --button-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --card-radius: 20px;
+    --card-radius-sm: 12px;
     
-    /* 动画变量 */
-    --hover-scale: 1.03;
+    /* 动画变量 - 更流畅的缓动 */
+    --hover-scale: 1.02;
     --hover-transition-time: 0.4s;
-    --box-shadow-hover: 0 10px 40px -10px rgba(46, 204, 113, 0.4);
+    --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    --spring-transition: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    
+    --box-shadow-hover: 
+        0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 8px 10px -6px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(59, 130, 246, 0.1);
+    
+    /* 现代发光效果 - 更柔和 */
+    --glow-color: rgba(59, 130, 246, 0.25);
+    --glow-color-strong: rgba(59, 130, 246, 0.5);
+    --glow-purple: rgba(139, 92, 246, 0.25);
+    --glow-cyan: rgba(6, 182, 212, 0.25);
+    
+    /* 新增：噪点纹理透明度 */
+    --noise-opacity: 0.03;
+    
+    /* 新增：彩色强调 */
+    --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+    --gradient-warm: linear-gradient(135deg, #f97316 0%, #ec4899 100%);
+    --gradient-cool: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
 }
 
 :root.dark-mode {
-    --background-color: #1a1d21;
-    --font-color: #f0f0f0;
-    --glass-background: rgba(30, 30, 35, 0.3);
-    --glass-border: rgba(255, 255, 255, 0.15);
-    --glass-highlight: rgba(255, 255, 255, 0.07);
+    --background-color: #020617;
+    --font-color: #e2e8f0;
+    --glass-background: var(--glass-background-dark);
+    --glass-background-solid: var(--glass-background-dark-solid);
+    --glass-border: var(--glass-border-dark);
+    --glass-highlight: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.15) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        transparent 60%
+    );
     --card-inner-shadow: var(--card-inner-shadow-dark);
-    --primary-color: rgba(26, 188, 156, 0.7);
-    --secondary-color: rgba(22, 160, 133, 0.7);
-    --tertiary-color: rgba(17, 122, 101, 0.7);
-    --footer-background: rgba(30, 30, 35, 0.2);
-    --box-shadow-hover: 0 10px 40px -10px rgba(26, 188, 156, 0.35);
+    --primary-color: #60a5fa;
+    --secondary-color: #a78bfa;
+    --tertiary-color: #818cf8;
+    --footer-background: linear-gradient(
+        135deg,
+        rgba(30, 41, 59, 0.95) 0%,
+        rgba(15, 23, 42, 0.9) 100%
+    );
+    --glass-shadow: 
+        0 4px 6px -1px rgba(0, 0, 0, 0.3),
+        0 2px 4px -2px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.05);
+    --glass-shadow-lg: 
+        0 10px 15px -3px rgba(0, 0, 0, 0.4),
+        0 4px 6px -4px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.08);
+    --box-shadow-hover: 
+        0 20px 25px -5px rgba(0, 0, 0, 0.3),
+        0 8px 10px -6px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(96, 165, 250, 0.2);
+    --glow-color: rgba(96, 165, 250, 0.2);
+    --glow-color-strong: rgba(96, 165, 250, 0.4);
+    --glow-purple: rgba(167, 139, 250, 0.2);
+    --noise-opacity: 0.02;
+    --button-gradient: linear-gradient(
+        135deg,
+        #3b82f6 0%,
+        #2563eb 50%,
+        #1d4ed8 100%
+    );
+    --button-gradient-hover: linear-gradient(
+        135deg,
+        #60a5fa 0%,
+        #3b82f6 50%,
+        #2563eb 100%
+    );
 }

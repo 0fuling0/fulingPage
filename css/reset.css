@@ -1,4 +1,4 @@
-/*---------- 2. 全局样式与重置 ----------*/
+/*---------- 2. 全局样式与重置 - Modern Aero 2.0 ----------*/
 body, h1, h2, h3, p, ul {
     margin: 0;
     padding: 0;
@@ -20,20 +20,27 @@ html {
     font-display: swap;
 }
 
+/* 现代风格主体背景 */
 body {
     min-height: 100vh;
-    font-family: 'LXGWWenKaiGBScreen', sans-serif;
+    font-family: 'LXGWWenKaiGBScreen', 'Segoe UI', system-ui, sans-serif;
     color: var(--font-color);
-    background-color: var(--background-color);
+    background: linear-gradient(
+        135deg,
+        #f8fafc 0%,
+        #e2e8f0 50%,
+        #f1f5f9 100%
+    );
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
     background-attachment: fixed;
     display: flex;
     flex-direction: column;
-    transition: background-color 0.3s ease, color 0.3s ease, background-image 1.5s ease;
+    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease;
 }
 
+/* 现代背景覆盖层 */
 body::before {
     content: '';
     position: fixed;
@@ -41,19 +48,33 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    backdrop-filter: blur(5px);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    backdrop-filter: blur(2px);
+    background: linear-gradient(
+        135deg,
+        rgba(59, 130, 246, 0.03) 0%,
+        rgba(139, 92, 246, 0.02) 50%,
+        rgba(6, 182, 212, 0.03) 100%
+    );
     z-index: -1;
+    pointer-events: none;
 }
 
-html.dark-mode::before {
-    background-color: rgba(0, 0, 0, 0.5);
+html.dark-mode body {
+    background: linear-gradient(
+        135deg,
+        #0f172a 0%,
+        #1e293b 50%,
+        #0f172a 100%
+    );
 }
 
 html.dark-mode body::before {
-    filter: brightness(0.6);
+    background: linear-gradient(
+        135deg,
+        rgba(59, 130, 246, 0.05) 0%,
+        rgba(139, 92, 246, 0.03) 50%,
+        rgba(6, 182, 212, 0.05) 100%
+    );
 }
 
 input, button, textarea {

@@ -1,58 +1,97 @@
-/*---------- 7. 动画与效果 ----------*/
-/* 滚动条美化 */
+/*---------- 7. 动画与效果 - Modern Aero 2.0 ----------*/
+/* 现代风格滚动条 */
 ::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    margin: 5px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--primary-color);
-    border-radius: 6px;
-    border: 3px solid transparent;
+    background: linear-gradient(
+        135deg,
+        var(--primary-color) 0%,
+        var(--secondary-color) 100%
+    );
+    border-radius: 10px;
+    border: 2px solid transparent;
     background-clip: padding-box;
-    min-height: 40px;
+    transition: all 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--secondary-color);
-    border: 2px solid transparent;
+    background: linear-gradient(
+        135deg,
+        var(--primary-color-light) 0%,
+        var(--secondary-color) 100%
+    );
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(
+        135deg,
+        var(--primary-color-dark) 0%,
+        #7c3aed 100%
+    );
     background-clip: padding-box;
 }
 
 html.dark-mode::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 html.dark-mode::-webkit-scrollbar-thumb {
-    background: var(--dark-mode-color);
-    border: 3px solid transparent;
+    background: linear-gradient(
+        135deg,
+        var(--primary-color) 0%,
+        var(--secondary-color) 100%
+    );
     background-clip: padding-box;
 }
 
 html.dark-mode::-webkit-scrollbar-thumb:hover {
-    background: var(--dark-mode-hover);
-    border: 2px solid transparent;
+    background: linear-gradient(
+        135deg,
+        var(--primary-color-light) 0%,
+        var(--secondary-color) 100%
+    );
     background-clip: padding-box;
 }
 
+/* 现代风格加载动画 - 白天模式 */
 .loading-container {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: var(--background-color);
+    background: linear-gradient(
+        135deg,
+        #f8fafc 0%,
+        #e2e8f0 30%,
+        #f1f5f9 70%,
+        #f8fafc 100%
+    );
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 9999;
-    transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 深色模式加载背景 */
+html.dark-mode .loading-container {
+    background: linear-gradient(
+        135deg,
+        #020617 0%,
+        #0f172a 30%,
+        #1e293b 70%,
+        #0f172a 100%
+    );
 }
 
 .loading-container.fade-out {
@@ -68,57 +107,106 @@ html.dark-mode::-webkit-scrollbar-thumb:hover {
     height: 50px;
 }
 
+/* 现代风格加载圆点 - 白天模式 */
 .circle {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     margin: 0 10px;
     border-radius: 50%;
-    background: var(--primary-color);
-    animation: bounce 0.5s cubic-bezier(0.19, 0.57, 0.3, 0.98) infinite alternate;
+    background: linear-gradient(
+        135deg,
+        var(--primary-color) 0%,
+        var(--secondary-color) 100%
+    );
+    box-shadow: 
+        0 0 15px rgba(59, 130, 246, 0.4),
+        0 0 30px rgba(139, 92, 246, 0.2),
+        0 4px 12px rgba(0, 0, 0, 0.1);
+    animation: modernBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite alternate;
     position: relative;
 }
 
 .shadow {
-    width: 20px;
+    width: 16px;
     height: 4px;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(59, 130, 246, 0.25);
     margin: 0 10px;
     position: absolute;
-    bottom: -10px;
-    animation: shadow 0.5s cubic-bezier(0.19, 0.57, 0.3, 0.98) infinite alternate;
+    bottom: -12px;
+    filter: blur(4px);
+    animation: modernShadow 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite alternate;
 }
 
 .shadow:nth-child(4) {
     left: 0;
 }
 .shadow:nth-child(5) {
-    left: 40px;
+    left: 36px;
 }
 .shadow:nth-child(6) {
-    left: 80px;
+    left: 72px;
 }
 
 .circle:nth-child(1), .shadow:nth-child(4) {
-    animation-delay: -0.2s;
+    animation-delay: -0.24s;
 }
 
 .circle:nth-child(2), .shadow:nth-child(5) {
-    animation-delay: -0.1s;
+    animation-delay: -0.12s;
 }
 
 .circle:nth-child(3), .shadow:nth-child(6) {
     animation-delay: 0s;
 }
 
+/* 深色模式加载圆点 */
 html.dark-mode .circle {
-    background: var(--dark-mode-color);
+    background: linear-gradient(
+        135deg,
+        var(--primary-color-light) 0%,
+        var(--secondary-color) 100%
+    );
+    box-shadow: 
+        0 0 25px rgba(96, 165, 250, 0.6),
+        0 0 50px rgba(167, 139, 250, 0.4);
 }
 
 html.dark-mode .shadow {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(96, 165, 250, 0.35);
+    filter: blur(3px);
 }
 
+/* 白天模式动画关键帧 */
+@keyframes modernBounce {
+    from {
+        transform: translateY(0) scale(1);
+        box-shadow: 
+            0 0 15px rgba(59, 130, 246, 0.4),
+            0 0 30px rgba(139, 92, 246, 0.2),
+            0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    to {
+        transform: translateY(-20px) scale(0.9);
+        box-shadow: 
+            0 0 25px rgba(59, 130, 246, 0.5),
+            0 0 45px rgba(139, 92, 246, 0.3),
+            0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+}
+
+@keyframes modernShadow {
+    from {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+    to {
+        transform: scale(0.5);
+        opacity: 0.2;
+    }
+}
+
+/* 保留旧动画以兼容 */
 @keyframes bounce {
     from {
         transform: translateY(0);
@@ -143,11 +231,14 @@ html.dark-mode .shadow {
     display: none !important;
 }
 
+/* 现代风格评论按钮 */
 .el-button {
-    border-radius: 12px;
-    background: var(--primary-color) !important;
-    border: 0px solid var(--dark-mode-hover) !important;
+    border-radius: var(--card-radius-sm) !important;
+    background: var(--button-gradient) !important;
+    border: none !important;
     color: white !important;
+    box-shadow: var(--button-shadow) !important;
+    transition: var(--transition-normal) !important;
 }
 
 .tk-extras {
@@ -170,8 +261,18 @@ html.dark-mode .shadow {
 }
 
 .el-button:hover {
-    background: var(--secondary-color) !important;
-    color: var(--white) !important;
+    background: var(--button-gradient-hover) !important;
+    color: white !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 
+        0 4px 15px rgba(59, 130, 246, 0.4),
+        0 2px 6px rgba(59, 130, 246, 0.2) !important;
+}
+
+.el-button:active {
+    background: var(--button-gradient-active) !important;
+    transform: translateY(0) !important;
+    box-shadow: var(--button-shadow) !important;
 }
 
 .tk-action-link,
@@ -187,14 +288,17 @@ html.dark-mode .shadow {
 }
 
 html.dark-mode .el-button {
-    background: var(--dark-mode-color) !important;
-    border: 0px solid var(--dark-mode-hover) !important;
-    color: var(--font-color) !important;
+    background: var(--button-gradient) !important;
+    border: none !important;
+    color: white !important;
 }
 
 html.dark-mode .el-button:hover {
-    background: var(--dark-mode-hover) !important;
-    color: var(--tertiary-color) !important;
+    background: var(--button-gradient-hover) !important;
+    color: white !important;
+    box-shadow: 
+        0 4px 15px rgba(96, 165, 250, 0.3),
+        0 2px 6px rgba(96, 165, 250, 0.15) !important;
 }
 
 html.dark-mode .el-button--primary.is-disabled,

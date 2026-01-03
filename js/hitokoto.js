@@ -1,10 +1,14 @@
 let currentHitokoto = '你好，又见面了！';
 let hitokotoInterval;
+let cachedContainers = null;
 
 /**
  * 初始化一言功能
  */
 function initHitokoto() {
+    // 重置容器缓存
+    cachedContainers = null;
+    
     updateAllHitokotoContainers(window.siteConfig?.hitokoto?.messages?.loading || '正在加载一言...');
     getHitokoto();
     
@@ -18,7 +22,12 @@ function initHitokoto() {
  * 更新所有一言容器
  */
 function updateAllHitokotoContainers(content) {
-    document.querySelectorAll('.hitokoto-container').forEach(container => {
+    // 缓存容器元素
+    if (!cachedContainers) {
+        cachedContainers = document.querySelectorAll('.hitokoto-container');
+    }
+    
+    cachedContainers.forEach(container => {
         container.textContent = content;
     });
 }
@@ -28,32 +37,23 @@ function updateAllHitokotoContainers(content) {
  */
 function getHitokoto() {
     const url = window.siteConfig?.hitokoto?.url || 'https://international.v1.hitokoto.cn/';
-    return fetch(url, {
+    const fetchOptions = {
         method: 'GET',
         mode: 'cors',
-        headers: {
-            'Accept': 'application/json',
-            'Origin': window.location.origin,
-            'Referer': window.location.href
-        }
-    })
+        headers: { 'Accept': 'application/json' }
+    };
+    
+    return fetch(url, fetchOptions)
         .then(response => {
             if (!response.ok) {
                 if (url.includes('international')) {
-                    const fallbackUrl = 'https://v1.hitokoto.cn/';
-                    console.log('Falling back to regular API:', fallbackUrl);
-                    return fetch(fallbackUrl, {
-                        method: 'GET',
-                        mode: 'cors',
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    });
+                    return fetch('https://v1.hitokoto.cn/', fetchOptions);
                 }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            return response.json();
+            return response;
         })
+        .then(response => response.json())
         .then(data => {
             const content = data.from ? 
                 `『${data.hitokoto}』—— ${data.from}` : 

@@ -1,62 +1,611 @@
-/*---------- 6. 媒体查询 ----------*/
-@media (max-width: 1320px) {
-    header, footer {
-        margin-left: 10px;
-        margin-right: 10px;
-        width: calc(100% - 20px);
-    }
-}
+/*---------- 6. 媒体查询 - Modern Aero 2.0 ----------*/
 
-@media (min-width: 1340px) {
-    header, main.container {
+/* ========== 大屏幕 (>1400px) ========== */
+@media (min-width: 1400px) {
+    header, main.container, footer {
+        width: 1376px;
         margin-left: auto;
         margin-right: auto;
-        width: 1300px;
     }
 }
 
-@media (max-width: 720px) {
-    main {
-        column-count: 1;
+/* ========== 桌面端 (≤1399px) ========== */
+@media (max-width: 1399px) {
+    header, main.container, footer {
+        width: calc(100% - 24px);
+        max-width: 1376px;
+        margin-left: auto;
+        margin-right: auto;
     }
 }
 
-@media (min-width: 721px) and (max-width: 1200px) {
-    main {
-        column-count: 2;
-    }
-}
-
-@media (min-width: 1201px) {
-    main {
-        column-count: 3;
-    }
-}
-
-@media screen and (max-width: 512px) {
-    .cardItem.active .grid-container {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media screen and (min-width: 513px) and (max-width: 600px) {
-    .cardItem.active .grid-container {
-        grid-template-columns: repeat(3, 1fr);
+/* ========== 平板端 (≤1024px) ========== */
+@media (max-width: 1024px) {
+    /* 布局 */
+    main { column-count: 2; }
+    
+    /* 容器 */
+    header, main.container, footer {
+        width: calc(100% - 16px);
     }
     
-    .search-options {
-        grid-template-columns: repeat(2, 1fr);
+    main.container {
+        padding: 8px;
     }
-}
-
-@media screen and (min-width: 601px) and (max-width: 900px) {
+    
+    /* Header */
+    .header-content {
+        padding: 12px 16px;
+    }
+    
+    .header-brand h1 {
+        font-size: 1.25rem;
+    }
+    
+    .header-brand .motto {
+        font-size: 0.8rem;
+    }
+    
+    .header-nav {
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+    
+    .header-nav a {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        border-radius: 10px;
+    }
+    
+    .header-nav a i {
+        font-size: 0.95rem;
+    }
+    
+    /* Footer */
+    .footer-content {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+    }
+    
+    .footer-info {
+        align-items: center;
+        text-align: center;
+    }
+    
+    .footer-links {
+        gap: 12px;
+    }
+    
+    .footer-links a {
+        width: 40px;
+        height: 40px;
+    }
+    
+    /* 卡片 */
+    .card {
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+    
+    /* 时钟 */
+    .clock-date {
+        font-size: 1.1rem;
+    }
+    
+    .clock-time {
+        font-size: 2.6rem;
+    }
+    
+    /* 个人档案 */
+    .card.profile {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .profile img {
+        margin-right: 0;
+        margin-bottom: 16px;
+        width: 85px;
+        height: 85px;
+    }
+    
+    .profile-info {
+        margin-bottom: 12px;
+    }
+    
+    .buttons {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    /* 联系方式 */
+    .contact-options {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    /* 轮播图 */
+    .carousel-card {
+        padding-bottom: 160px;
+    }
+    
+    .carousel-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 0.9rem;
+    }
+    
+    /* 导航按钮 */
+    .navButtons {
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 14px 0;
+    }
+    
+    .navButton {
+        padding: 10px 14px;
+        font-size: 0.9rem;
+        flex: 1 1 auto;
+        min-width: 70px;
+        text-align: center;
+    }
+    
+    /* 搜索框 */
+    .search-container {
+        max-width: 100%;
+    }
+    
+    .custom-select {
+        min-width: 100px;
+    }
+    
+    .select-styled,
+    .search-input {
+        padding: 10px 14px;
+        font-size: 0.9rem;
+    }
+    
+    .search-button {
+        padding: 10px 16px;
+    }
+    
+    /* 导航网格 */
     .cardItem.active .grid-container {
         grid-template-columns: repeat(4, 1fr);
     }
 }
 
-@media screen and (min-width: 901px) {
+/* ========== 移动端 (≤480px) ========== */
+@media (max-width: 480px) {
+    /* 布局 */
+    main { column-count: 1; }
+    
+    /* 容器 */
+    header, main.container, footer {
+        width: calc(100% - 10px);
+    }
+    
+    main.container {
+        padding: 5px;
+    }
+    
+    /* Header - 紧凑垂直布局 */
+    header {
+        border-radius: 0 0 16px 16px;
+    }
+    
+    .header-content {
+        padding: 10px 12px;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .header-brand {
+        flex-direction: row;
+        align-items: baseline;
+        gap: 8px;
+    }
+    
+    .header-brand h1 {
+        font-size: 1.05rem;
+        letter-spacing: 0;
+    }
+    
+    .header-brand .motto {
+        font-size: 0.75rem;
+        opacity: 0.7;
+    }
+    
+    .header-nav-wrapper {
+        width: 100%;
+        justify-content: center;
+        gap: 6px;
+        padding: 4px;
+        background: rgba(0, 0, 0, 0.03);
+        border-radius: 12px;
+    }
+    
+    html.dark-mode .header-nav-wrapper {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .header-nav {
+        flex: 1;
+        justify-content: center;
+        gap: 4px;
+    }
+    
+    .header-nav a {
+        padding: 7px 10px;
+        font-size: 0.85rem;
+        gap: 0;
+        border-radius: 8px;
+        flex: 1;
+        justify-content: center;
+        min-width: 0;
+    }
+    
+    .header-nav a i {
+        font-size: 1rem;
+    }
+    
+    .header-nav a span {
+        display: none;
+    }
+    
+    .header-nav a.active {
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+    }
+    
+    .header-dark-toggle {
+        padding: 8px 10px;
+    }
+    
+    .header-dark-toggle i {
+        font-size: 0.9rem;
+    }
+    
+    .header-indicator {
+        height: 2px;
+    }
+    
+    /* Footer */
+    footer {
+        border-radius: 16px 16px 0 0;
+    }
+    
+    .footer-content {
+        padding: 12px;
+        gap: 8px;
+    }
+    
+    .footer-info .copyright {
+        font-size: 0.8rem;
+    }
+    
+    .footer-info .runtime {
+        font-size: 0.75rem;
+    }
+    
+    .footer-links a {
+        width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+    }
+    
+    /* 卡片 */
+    .card {
+        padding: 14px;
+        margin-bottom: 10px;
+        border-radius: 14px;
+    }
+    
+    .card h3 {
+        font-size: 1rem;
+    }
+    
+    /* 时钟 */
+    .clock-date {
+        font-size: 0.95rem;
+    }
+    
+    .clock-time {
+        font-size: 2rem;
+    }
+    
+    .hitokoto-container {
+        font-size: 0.88rem;
+        line-height: 1.5;
+    }
+    
+    /* 个人档案 */
+    .profile img {
+        width: 72px;
+        height: 72px;
+    }
+    
+    .profile-info h2 {
+        font-size: 1.15rem;
+    }
+    
+    .profile-info p {
+        font-size: 0.88rem;
+    }
+    
+    .buttons {
+        gap: 8px;
+    }
+    
+    .button {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+    }
+    
+    /* 联系方式 */
+    .contact-options {
+        gap: 14px;
+    }
+    
+    .contact-options a {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .contact-options a i {
+        margin-right: 0;
+        font-size: 1.4rem;
+    }
+    
+    .contact-options a span {
+        font-size: 0.78rem;
+    }
+    
+    /* 轮播图 */
+    .carousel-card {
+        padding-bottom: 130px;
+    }
+    
+    .carousel-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 0.85rem;
+    }
+    
+    .carousel-btn.prev-btn {
+        left: 8px;
+    }
+    
+    .carousel-btn.next-btn {
+        right: 8px;
+    }
+    
+    .carousel-indicators {
+        bottom: 10px;
+        padding: 4px 8px;
+        gap: 6px;
+    }
+    
+    .carousel-dot {
+        width: 6px;
+        height: 6px;
+    }
+    
+    .carousel-dot.active {
+        width: 16px;
+    }
+    
+    /* 导航按钮 - 网格布局 */
+    .navButtons {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        margin: 10px 0;
+        padding: 5px;
+        background: rgba(0, 0, 0, 0.03);
+        border-radius: 10px;
+    }
+    
+    html.dark-mode .navButtons {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .navButton {
+        padding: 9px 5px;
+        font-size: 0.78rem;
+        text-align: center;
+        border-radius: 8px;
+    }
+    
+    .navButton::before {
+        bottom: 2px;
+        height: 2px;
+        width: 50%;
+    }
+    
+    /* 项目列表 */
+    .project {
+        margin-bottom: 12px;
+    }
+    
+    .project a span {
+        font-size: 0.88rem;
+    }
+    
+    .project p {
+        font-size: 0.82rem;
+    }
+    
+    /* 搜索框 - 垂直堆叠 */
+    .search-container {
+        flex-direction: column;
+        gap: 0;
+        border-radius: var(--card-radius);
+        overflow: visible;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    }
+    
+    .custom-select {
+        width: 100%;
+        position: relative;
+    }
+    
+    .select-styled {
+        border-radius: var(--card-radius) var(--card-radius) 0 0;
+        border-bottom: none;
+        padding: 12px 14px;
+        font-size: 0.92rem;
+        justify-content: space-between;
+    }
+    
+    .select-styled::after {
+        content: '▾';
+        display: inline-block;
+        margin-left: 8px;
+        font-size: 0.8rem;
+        opacity: 0.6;
+    }
+    
+    .search-input {
+        width: 100%;
+        border-radius: 0;
+        border: 1px solid var(--glass-border);
+        border-top: none;
+        border-bottom: none;
+        padding: 12px 14px;
+        font-size: 0.95rem;
+        text-align: center;
+    }
+    
+    .search-input::placeholder {
+        text-align: center;
+    }
+    
+    .search-button {
+        width: 100%;
+        border-radius: 0 0 var(--card-radius) var(--card-radius);
+        padding: 12px 18px;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .search-button i {
+        font-size: 1rem;
+    }
+    
+    /* 搜索选项下拉框 */
+    .search-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        border-radius: 0 0 var(--card-radius) var(--card-radius);
+        grid-template-columns: repeat(2, 1fr);
+        padding: 10px;
+        gap: 6px;
+        margin-top: -1px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+    
+    .search-option {
+        padding: 10px 12px;
+        text-align: center;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.03);
+        font-size: 0.85rem;
+    }
+    
+    html.dark-mode .search-option {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .search-option:active {
+        transform: scale(0.96);
+    }
+    
+    /* 导航网格 */
     .cardItem.active .grid-container {
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+    
+    .grid-item {
+        padding: 12px 8px;
+    }
+    
+    .grid-item span {
+        font-size: 0.78rem;
+    }
+}
+
+/* ========== 触摸设备优化 ========== */
+@media (hover: none) and (pointer: coarse) {
+    .navButton,
+    .header-nav a {
+        min-height: 42px;
+    }
+    
+    .footer-links a {
+        min-width: 42px;
+        min-height: 42px;
+    }
+    
+    .card:hover {
+        transform: none;
+    }
+    
+    .card:active {
+        transform: scale(0.98);
+    }
+    
+    .button:hover {
+        transform: none;
+    }
+    
+    .button:active {
+        transform: scale(0.95);
+    }
+    
+    .carousel-btn {
+        opacity: 0.85;
+    }
+}
+
+/* ========== 横屏手机 ========== */
+@media (max-height: 500px) and (orientation: landscape) {
+    header {
+        position: relative;
+        top: 0;
+    }
+    
+    .clock-time {
+        font-size: 1.8rem;
+    }
+    
+    .carousel-card {
+        padding-bottom: 100px;
+    }
+}
+
+/* ========== 打印样式 ========== */
+@media print {
+    header, footer, .fixed-buttons {
+        display: none;
+    }
+    
+    main.container {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
     }
 }

@@ -1,161 +1,122 @@
-let currentBackgroundImageIndex = 0;
-let backgroundImages = [];
-let backgroundImageInterval;
-let isSlideShowRunning = false;
-let preloadedImages = {};
-
 /**
- * 预加载初始背景图片
- * @param {Function} callback - 图片加载完成后的回调函数
+ * 背景图片轮播模块 - 无闪烁版
+ * 使用双层叠加实现平滑过渡
  */
-function preloadInitialBackgroundImage(callback) {
-    if (!window.siteConfig || !window.siteConfig.backgroundImages || !window.siteConfig.backgroundImages.images) {
-        if (callback) callback();
-        return;
-    }
+
+let images = [];
+let index = 0;
+let timer = null;
+const loaded = new Set();
+
+// 背景层元素
+let bgLayer1 = null;
+let bgLayer2 = null;
+let activeLayer = 1;
+
+// 创建背景层
+const createLayers = () => {
+    if (bgLayer1) return;
     
-    const [firstImage] = window.siteConfig.backgroundImages.images;
-    if (!firstImage) {
-        if (callback) callback();
-        return;
-    }
-    
-    const img = new Image();
-    img.onload = function() {
-        document.body.style.backgroundImage = `url('${firstImage}')`;
-        preloadedImages[firstImage] = img;
-        if (callback) callback();
+    const createLayer = (zIndex) => {
+        const layer = document.createElement('div');
+        layer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: ${zIndex};
+            transition: opacity 1.5s ease;
+            pointer-events: none;
+        `;
+        document.body.prepend(layer);
+        return layer;
     };
-    img.onerror = function() {
-        console.error('Failed to load initial background image:', firstImage);
-        if (callback) callback();
-    };
-    img.src = firstImage;
-}
-
-/**
- * 初始化背景图片
- */
-function initBackgroundImage() {
-    const body = document.body;
-    const savedIndex = localStorage.getItem('backgroundImageIndex');
-    if (savedIndex !== null) {
-        currentBackgroundImageIndex = parseInt(savedIndex);
-    }
     
-    updateBackgroundImage();
-    body.addEventListener('transitionend', function () {
-        body.style.transition = '';
-    });
-}
-
-/**
- * 更新背景图片并预加载下一张
- */
-function updateBackgroundImage() {
-    if (!backgroundImages || backgroundImages.length === 0) return;
-    
-    const body = document.body;
-    const currentImage = backgroundImages[currentBackgroundImageIndex];
-    
-    // 如果当前图片已预加载，直接使用
-    if (preloadedImages[currentImage]) {
-        body.style.transition = 'background-image 1.5s ease';
-        body.style.backgroundImage = `url('${currentImage}')`;
-        localStorage.setItem('backgroundImageIndex', currentBackgroundImageIndex);
-        
-        // 预加载下一张图片
-        const nextIndex = (currentBackgroundImageIndex + 1) % backgroundImages.length;
-        preloadNextBackgroundImage(nextIndex);
-    } else {
-        // 否则先预加载当前图片
-        const img = new Image();
-        img.onload = function() {
-            preloadedImages[currentImage] = img;
-            body.style.transition = 'background-image 1.5s ease';
-            body.style.backgroundImage = `url('${currentImage}')`;
-            localStorage.setItem('backgroundImageIndex', currentBackgroundImageIndex);
-            
-            // 预加载下一张图片
-            const nextIndex = (currentBackgroundImageIndex + 1) % backgroundImages.length;
-            preloadNextBackgroundImage(nextIndex);
-        };
-        img.onerror = function() {
-            console.error('Failed to load background image:', currentImage);
-            // 失败时尝试加载下一张
-            nextBackgroundImage();
-        };
-        img.src = currentImage;
-    }
-}
-
-/**
- * 切换到下一张背景图片
- */
-function nextBackgroundImage() {
-    currentBackgroundImageIndex = (currentBackgroundImageIndex + 1) % backgroundImages.length;
-    updateBackgroundImage();
-}
-
-/**
- * 预加载下一张背景图片
- * @param {Number} nextIndex - 下一张图片的索引
- */
-function preloadNextBackgroundImage(nextIndex) {
-    if (!backgroundImages || backgroundImages.length === 0 || nextIndex >= backgroundImages.length) return;
-    
-    const nextImage = backgroundImages[nextIndex];
-    
-    // 避免重复预加载
-    if (!preloadedImages[nextImage]) {
-        const img = new Image();
-        img.onload = function() {
-            preloadedImages[nextImage] = img;
-        };
-        img.onerror = function() {
-            console.error('Failed to preload image:', nextImage);
-        };
-        img.src = nextImage;
-    }
-}
-
-/**
- * 启动背景图片轮播
- */
-function startBackgroundSlideshow() {
-    if (!backgroundImages || backgroundImages.length === 0 || isSlideShowRunning) return;
-    
-    // 先加载初始图片，然后开始轮播
-    preloadInitialBackgroundImage(() => {
-        if (backgroundImageInterval) clearInterval(backgroundImageInterval);
-        const interval = window.siteConfig?.backgroundImages?.interval || 30000;
-        
-        // 初始图片已加载，显示并准备下一张
-        updateBackgroundImage();
-        
-        // 启动轮播
-        isSlideShowRunning = true;
-        backgroundImageInterval = setInterval(() => {
-            nextBackgroundImage();
-        }, interval);
-    });
-}
-
-/**
- * 设置背景图片数组
- * @param {Array} images - 背景图片URL数组
- */
-function setBackgroundImages(images) {
-    backgroundImages = images;
-    // 重置预加载图片缓存
-    preloadedImages = {};
-}
-
-// 导出模块函数
-export default {
-    preloadInitialBackgroundImage,
-    initBackgroundImage,
-    startBackgroundSlideshow,
-    nextBackgroundImage,
-    setBackgroundImages
+    bgLayer2 = createLayer(-2);
+    bgLayer1 = createLayer(-1);
 };
+
+// 预加载图片
+const preload = (src) => {
+    if (loaded.has(src)) return Promise.resolve();
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => { loaded.add(src); resolve(); };
+        img.onerror = resolve;
+        img.src = src;
+    });
+};
+
+// 显示背景（淡入淡出）
+const show = async (transition = true) => {
+    if (!images.length) return;
+    
+    createLayers();
+    
+    const src = images[index];
+    await preload(src);
+    
+    const currentLayer = activeLayer === 1 ? bgLayer1 : bgLayer2;
+    const nextLayer = activeLayer === 1 ? bgLayer2 : bgLayer1;
+    
+    // 设置新图片到下层
+    nextLayer.style.backgroundImage = `url('${src}')`;
+    nextLayer.style.opacity = '0';
+    
+    if (transition) {
+        // 强制重绘
+        nextLayer.offsetHeight;
+        
+        // 淡入新层，淡出旧层
+        nextLayer.style.opacity = '1';
+        currentLayer.style.opacity = '0';
+        
+        // 切换活动层
+        activeLayer = activeLayer === 1 ? 2 : 1;
+    } else {
+        // 无过渡，直接显示
+        nextLayer.style.transition = 'none';
+        nextLayer.style.opacity = '1';
+        currentLayer.style.opacity = '0';
+        nextLayer.offsetHeight;
+        nextLayer.style.transition = 'opacity 1.5s ease';
+        activeLayer = activeLayer === 1 ? 2 : 1;
+    }
+    
+    // 预加载下一张
+    preload(images[(index + 1) % images.length]);
+};
+
+// 下一张
+const next = () => {
+    index = (index + 1) % images.length;
+    show();
+};
+
+// 初始化
+const init = (config) => {
+    if (!config?.images?.length) return;
+    
+    images = config.images;
+    index = parseInt(localStorage.getItem('bgIdx')) || 0;
+    index = index % images.length;
+    
+    // 清除 body 背景
+    document.body.style.backgroundImage = 'none';
+    
+    // 显示当前图片
+    show(false);
+    
+    // 启动轮播
+    if (timer) clearInterval(timer);
+    timer = setInterval(next, config.interval || 30000);
+    
+    // 保存索引
+    setInterval(() => localStorage.setItem('bgIdx', index), 5000);
+};
+
+export default { init };

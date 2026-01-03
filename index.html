@@ -63,9 +63,19 @@
         </div>
     </div>
     <header>
-        <h1></h1>
-        <p class="motto"></p>
-        <div id="headerLinks"></div>
+        <div class="header-content">
+            <div class="header-brand">
+                <h1></h1>
+                <p class="motto"></p>
+            </div>
+            <div class="header-nav-wrapper">
+                <nav id="headerLinks" class="header-nav" role="navigation" aria-label="主导航"></nav>
+                <button id="darkModeToggle" class="header-dark-toggle" onclick="toggleDarkMode()" aria-label="切换暗色模式" title="切换暗色模式">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+        <div class="header-indicator"></div>
     </header>
 
     <main class="container">
@@ -110,12 +120,30 @@
     </main>
 
     <footer>
-        <p>© 2024 Fuling Chen. All rights reserved.</p>
+        <div class="footer-content">
+            <div class="footer-info">
+                <p class="copyright"></p>
+                <p class="runtime">✨ 网站已运行 <span id="footer-runtime">0</span> 天</p>
+            </div>
+            <div class="footer-links">
+               <a href="https://www.fuling.cloudns.org/" aria-label="博客" target="_blank">
+                    <i class="fa-solid fa-blog"></i>
+                </a>               
+                <a href="#home" onclick="showSection('homepage'); return false;" aria-label="主页">
+                    <i class="fas fa-home"></i>
+                </a>
+                <a href="#nav" onclick="showSection('navpage'); return false;" aria-label="导航">
+                    <i class="fas fa-compass"></i>
+                </a>
+                <a href="#" onclick="toggleDarkMode(); return false;" aria-label="切换暗色模式">
+                    <i class="fas fa-moon" id="footerDarkIcon"></i>
+                </a>
+                <a href="#" onclick="scrollToTop(); return false;" aria-label="返回顶部">
+                    <i class="fas fa-arrow-up"></i>
+                </a>
+            </div>
+        </div>
     </footer>
-
-    <button id="backToTop" class="back-to-top-button" aria-label="返回顶部"><i class="fas fa-arrow-up"></i></button>
-    <button id="backToBottom" class="back-to-bottom-button" aria-label="返回底部"><i class="fas fa-arrow-down"></i></button>
-    <button id="darkModeToggle" class="dark-mode-toggle" onclick="toggleDarkMode()" aria-label="切换夜间模式"><i class="fas fa-moon"></i></button>
 
 </body>
 

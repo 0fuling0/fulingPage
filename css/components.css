@@ -1,160 +1,230 @@
-/*---------- 4. 组件样式 ----------*/
-/* 按钮样式 */
+/*---------- 4. 组件样式 - Modern Aero 2.0 ----------*/
+/* 现代风格按钮 */
 .button {
     white-space: nowrap;
-    padding: 10px 15px;
-    font-size: 1.1rem;
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    font-weight: 500;
     cursor: pointer;
     border: none;
-    border-radius: 10px;
+    border-radius: var(--button-radius);
     outline: none;
-    background-color: var(--primary-color);
+    background: var(--button-gradient);
     color: #fff;
+    box-shadow: var(--button-shadow);
     transition: var(--button-transition);
     position: relative;
     overflow: hidden;
+    letter-spacing: 0.01em;
 }
 
-/* 新增统一规则 */
-.button::after,
-.back-to-top-button::after,
-.back-to-bottom-button::after,
-.dark-mode-toggle::after {
+/* 现代按钮光泽效果 - 更柔和 */
+.button::before {
     content: '';
     position: absolute;
     top: 0;
-    left: -50%;
-    width: 200%;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        transparent 50%
+    );
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity var(--transition-fast);
+}
+
+/* 流光扫过效果 */
+.button::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
     height: 100%;
     background: linear-gradient(
-        60deg,
+        90deg,
         transparent 0%,
-        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.4) 50%,
         transparent 100%
     );
-    transform: translateX(-100%) rotate(45deg);
-    transition: transform 0.5s ease-in-out;
+    transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
 }
 
 .button:hover {
-    background-color: var(--secondary-color);
-    transform: scale(1.05);
+    background: var(--button-gradient-hover);
+    transform: translateY(-2px);
+    box-shadow: 
+        0 4px 12px rgba(59, 130, 246, 0.4),
+        0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
 .button:hover::after {
-    transform: translateX(100%) rotate(45deg);
+    left: 100%;
 }
 
 .button:active {
-    background-color: var(--tertiary-color);
+    transform: translateY(0);
+    background: var(--button-gradient-active);
+    box-shadow: var(--button-shadow);
 }
 
 html.dark-mode .button {
-    background-color: var(--dark-mode-color);
+    background: var(--button-gradient);
 }
 
 html.dark-mode .button:hover {
-    background-color: var(--dark-mode-hover);
+    background: var(--button-gradient-hover);
+    box-shadow: 
+        0 4px 12px rgba(96, 165, 250, 0.3),
+        0 2px 4px rgba(96, 165, 250, 0.15);
 }
 
 html.dark-mode .button:active {
-    background-color: var(--dark-mode-active);
+    background: var(--button-gradient-active);
 }
 
-/* 导航按钮 */
+/* 现代风格导航按钮 */
 .navButton {
     cursor: pointer;
-    padding: 10px 0;
+    padding: 10px 20px;
     border: none;
     position: relative;
+    border-radius: var(--card-radius-sm);
+    transition: var(--transition-normal);
+    background: transparent;
+    font-weight: 500;
 }
 
+/* 下划线指示器 - 渐变色 */
 .navButton::before {
     content: "";
     position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background-color: transparent;
-    transition: background-color 0.3s ease;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 60%;
+    height: 3px;
+    background: var(--accent-gradient);
+    border-radius: 2px;
+    transition: transform var(--spring-transition);
+}
+
+.navButton:hover {
+    background: rgba(59, 130, 246, 0.08);
 }
 
 .navButton:hover::before {
-    background-color: var(--font-color);
+    transform: translateX(-50%) scaleX(1);
 }
 
 .navButton.current {
-    font-weight: bold;
+    font-weight: 600;
+    color: var(--primary-color);
+    background: rgba(59, 130, 246, 0.1);
 }
 
 .navButton.current::before {
-    background-color: var(--primary-color);
+    transform: translateX(-50%) scaleX(1);
 }
 
-html.dark-mode .navButton.current::before {
-    background-color: var(--dark-mode-color);
+html.dark-mode .navButton:hover {
+    background: rgba(96, 165, 250, 0.1);
 }
 
-/* 卡片样式 - 增强玻璃效果 */
+html.dark-mode .navButton.current {
+    color: var(--primary-color-light);
+    background: rgba(96, 165, 250, 0.15);
+}
+
+/* 现代风格卡片 - Glassmorphism 2.0 */
 .card {
     break-inside: avoid;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     position: relative;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: var(--glass-shadow), var(--card-inner-shadow);
+    padding: 24px;
+    border-radius: var(--card-radius);
+    box-shadow: var(--glass-shadow);
     background: var(--glass-background);
     backdrop-filter: blur(var(--blur-amount));
     -webkit-backdrop-filter: blur(var(--blur-amount));
     border: var(--glass-border-width) solid var(--glass-border);
-    transition: transform var(--hover-transition-time) cubic-bezier(0.165, 0.84, 0.44, 1),
-                background-color 0.3s ease,
-                backdrop-filter 0.3s ease,
-                box-shadow 0.3s ease;
+    transition: all var(--transition-normal);
     box-sizing: border-box;
     overflow: hidden;
 }
 
-/* 卡片内部光感效果 */
-.card::after {
+/* 卡片顶部柔光 */
+.card::before {
     content: '';
     position: absolute;
     top: 0;
-    left: -50%;
-    width: 200%;
-    height: 100%;
-    background: linear-gradient(
-        60deg,
-        transparent 0%,
-        var(--glass-highlight) 50%,
-        transparent 100%
-    );
-    transform: translateX(-100%) translateY(-100%) rotate(45deg);
-    transition: transform 0.7s ease-in-out;
+    left: 0;
+    right: 0;
+    height: 120px;
+    background: var(--glass-highlight);
+    border-radius: var(--card-radius) var(--card-radius) 0 0;
     pointer-events: none;
+    opacity: 0.8;
+}
+
+/* 卡片边框渐变光效 */
+.card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--card-radius);
+    padding: 1px;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.4) 0%,
+        transparent 40%,
+        transparent 60%,
+        rgba(255, 255, 255, 0.1) 100%
+    );
+    -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--transition-normal);
 }
 
 html.dark-mode .card {
     background: var(--glass-background-dark);
     border-color: var(--glass-border-dark);
-    box-shadow: var(--glass-shadow), var(--card-inner-shadow-dark);
 }
 
 .card:hover {
-    transform: scale(var(--hover-scale));
-    backdrop-filter: blur(calc(var(--blur-amount) * 1.5));
-    -webkit-backdrop-filter: blur(calc(var(--blur-amount) * 1.5));
-    box-shadow: var(--glass-shadow), var(--box-shadow-hover), var(--card-inner-shadow);
+    transform: translateY(-4px);
+    box-shadow: var(--glass-shadow-lg);
 }
 
 .card:hover::after {
-    transform: translateX(100%) translateY(100%) rotate(45deg);
+    opacity: 1;
 }
 
 html.dark-mode .card:hover {
-    box-shadow: var(--glass-shadow), var(--box-shadow-hover), var(--card-inner-shadow-dark);
+    box-shadow: var(--glass-shadow-lg);
+}
+
+html.dark-mode .card::after {
+    background: linear-gradient(
+        135deg,
+        rgba(96, 165, 250, 0.3) 0%,
+        transparent 40%,
+        transparent 60%,
+        rgba(139, 92, 246, 0.2) 100%
+    );
 }
 
 .card ul {
@@ -164,73 +234,182 @@ html.dark-mode .card:hover {
 }
 
 .card ul li {
-    margin-bottom: 8px;
-    line-height: 1.5;
+    margin-bottom: 10px;
+    line-height: 1.6;
 }
 
-/* 固定位置按钮 - 增强玻璃效果 */
-.back-to-top-button,
-.back-to-bottom-button,
-.dark-mode-toggle {
+/* ========== 现代风格固定按钮组 ========== */
+.fixed-buttons {
     position: fixed;
-    background: var(--primary-color);
-    backdrop-filter: blur(var(--blur-amount));
-    -webkit-backdrop-filter: blur(var(--blur-amount));
-    border: var(--glass-border-width) solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    color: #fff;
-    width: var(--button-width);
-    height: var(--button-height);
-    font-size: var(--button-size);
-    cursor: pointer;
-    border-radius: var(--button-radius);
-    margin-top: 5px;
     right: 20px;
-    transition: var(--button-transition);
+    bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 1000;
+}
+
+.fixed-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 1rem;
+    background: var(--glass-background-solid);
+    backdrop-filter: blur(var(--blur-amount));
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    color: var(--font-color);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
     overflow: hidden;
 }
 
-html.dark-mode .back-to-top-button,
-html.dark-mode .back-to-bottom-button,
-html.dark-mode .dark-mode-toggle {
-    background: var(--dark-mode-color);
+/* 默认隐藏状态（滚动切换按钮） */
+.fixed-btn.scroll-toggle {
+    opacity: 0;
+    transform: translateX(60px);
+    pointer-events: none;
+}
+
+.fixed-btn.scroll-toggle.visible {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+/* 滚动按钮图标旋转动画 */
+.fixed-btn.scroll-toggle i {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 按钮内部光泽 */
+.fixed-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 60%);
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.fixed-btn:hover {
+    background: var(--button-gradient);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 
+        0 8px 24px rgba(59, 130, 246, 0.35),
+        0 4px 8px rgba(59, 130, 246, 0.2);
+}
+
+.fixed-btn#backToTop:hover,
+.fixed-btn#backToBottom:hover {
+    transform: translateY(-3px) scale(1.08);
+}
+
+.fixed-btn.dark-mode-toggle:hover {
+    transform: translateY(-3px) scale(1.08);
+}
+
+.fixed-btn:hover::before {
+    opacity: 1;
+}
+
+.fixed-btn:active {
+    transform: translateY(0) scale(1);
+    box-shadow: var(--glass-shadow);
+}
+
+.fixed-btn i {
+    position: relative;
+    z-index: 1;
+    transition: transform 0.3s ease;
+}
+
+.fixed-btn:hover i {
+    transform: scale(1.1);
+}
+
+/* 深色模式 */
+html.dark-mode .fixed-btn {
+    background: var(--glass-background-dark-solid);
     border-color: var(--glass-border-dark);
+    color: var(--font-color);
 }
 
-.back-to-top-button { bottom: 105px; }
-.back-to-bottom-button { bottom: 65px; }
-.dark-mode-toggle { bottom: 25px; }
-
-.back-to-top-button:hover,
-.back-to-bottom-button:hover,
-.dark-mode-toggle:hover {
-    background: var(--secondary-color);
-    transform: scale(1.05);
+html.dark-mode .fixed-btn:hover {
+    background: var(--button-gradient);
+    color: #fff;
+    box-shadow: 
+        0 8px 24px rgba(96, 165, 250, 0.3),
+        0 4px 8px rgba(96, 165, 250, 0.15);
 }
 
-.back-to-top-button:hover::after,
-.back-to-bottom-button:hover::after,
-.dark-mode-toggle:hover::after {
-    transform: translateX(100%) rotate(45deg);
+/* 深色模式切换按钮 - 始终可见 */
+.fixed-btn.dark-mode-toggle {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
 }
 
-.back-to-top-button:active,
-.back-to-bottom-button:active,
-.dark-mode-toggle:active {
-    background: var(--tertiary-color);
+.fixed-btn.dark-mode-toggle i {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-html.dark-mode .back-to-top-button:hover,
-html.dark-mode .back-to-bottom-button:hover,
-html.dark-mode .dark-mode-toggle:hover {
-    background-color: var(--dark-mode-hover);
+html.dark-mode .fixed-btn.dark-mode-toggle i {
+    transform: rotate(180deg);
 }
 
-html.dark-mode .back-to-top-button:active,
-html.dark-mode .back-to-bottom-button:active,
-html.dark-mode .dark-mode-toggle:active {
-    background-color: var(--dark-mode-active);
+.fixed-btn.dark-mode-toggle:hover i {
+    transform: rotate(20deg) scale(1.1);
+}
+
+html.dark-mode .fixed-btn.dark-mode-toggle:hover i {
+    transform: rotate(200deg) scale(1.1);
+}
+
+/* 按钮动画延迟 */
+.fixed-btn.scroll-toggle { transition-delay: 0.05s; }
+
+/* 平板适配 */
+@media (max-width: 768px) {
+    .fixed-buttons {
+        right: 16px;
+        bottom: 20px;
+        gap: 10px;
+    }
+    
+    .fixed-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 0.95rem;
+    }
+}
+
+/* 移动端适配 */
+@media (max-width: 480px) {
+    .fixed-buttons {
+        right: 12px;
+        bottom: 16px;
+        gap: 8px;
+    }
+    
+    .fixed-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 0.9rem;
+    }
+}
+
+/* 兼容旧版类名 - 隐藏旧版独立按钮 */
+button.back-to-top-button:not(.fixed-btn),
+button.back-to-bottom-button:not(.fixed-btn),
+button.dark-mode-toggle:not(.fixed-btn) {
+    display: none;
 }

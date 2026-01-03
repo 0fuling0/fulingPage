@@ -1,28 +1,57 @@
 let timer;
 let currentCardNumber = 1;
 
+// 缓存 DOM 元素引用
+let cachedElements = {
+    main: null,
+    headerH1: null,
+    cardContainer: null
+};
+
+/**
+ * 初始化 DOM 缓存
+ */
+function initDOMCache() {
+    cachedElements.main = document.querySelector('main');
+    cachedElements.headerH1 = document.querySelector('header h1');
+    cachedElements.cardContainer = document.querySelector('.cardContainer');
+}
+
 /**
  * 初始化导航功能
  */
 function initNavigation() {
+    // 初始化 DOM 缓存
+    initDOMCache();
+    
     // 初始化当前卡片
     document.querySelector('.navButton[data-card="1"]')?.classList.add('current');
     currentCardNumber = 1;
     
-    // 为卡片项添加点击事件
-    const cardItems = document.querySelectorAll('.cardItem');
-    cardItems.forEach(card => {
-        card.addEventListener('click', function() {
-            const cardNumber = parseInt(this.id.replace('card', ''), 10);
-            switchToCard(cardNumber);
-        });
-    });
+    // 使用事件委托处理卡片点击
+    const cardContainer = cachedElements.cardContainer;
+    if (cardContainer) {
+        cardContainer.addEventListener('click', handleCardClick);
+    }
 
     // 监听URL哈希变化
-    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('hashchange', handleHashChange, { passive: true });
     
     // 根据当前URL哈希初始化页面
     handleHashChange();
+}
+
+/**
+ * 事件委托处理卡片点击
+ */
+function handleCardClick(e) {
+    const cardItem = e.target.closest('.cardItem');
+    if (cardItem) {
+        const cardNumber = parseInt(cardItem.id.replace('card', ''), 10);
+        if (!isNaN(cardNumber)) {
+            switchToCard(cardNumber);
+        }
+    }
 }
 
 /**
@@ -42,23 +71,17 @@ function handleHashChange() {
  * @param {string} sectionId - 部分ID
  */
 function showSection(sectionId) {
-    const sectionsToHide = ['homepage', 'navpage'];
-    sectionsToHide.forEach(id => {
-        const section = document.getElementById(id);
-        if (section) {
-            section.style.display = 'none';
-        }
-    });
-    const sectionToShow = document.getElementById(sectionId);
-    if (sectionToShow) {
-        sectionToShow.style.display = 'block';
-        updateHeaderText(sectionId);
-    } else {
-        console.log(`Section with id ${sectionId} not found.`);
-    }
-    const mainElement = document.querySelector('main');
-    if (mainElement) {
-        mainElement.style.columnCount = (sectionId === 'navpage') ? '1' : '';
+    // 使用 CSS class 切换而非直接操作 style
+    const homepage = document.getElementById('homepage');
+    const navpage = document.getElementById('navpage');
+    
+    if (homepage) homepage.style.display = sectionId === 'homepage' ? 'block' : 'none';
+    if (navpage) navpage.style.display = sectionId === 'navpage' ? 'block' : 'none';
+    
+    updateHeaderText(sectionId);
+    
+    if (cachedElements.main) {
+        cachedElements.main.style.columnCount = (sectionId === 'navpage') ? '1' : '';
     }
 }
 
@@ -67,19 +90,11 @@ function showSection(sectionId) {
  * @param {string} sectionId - 部分ID
  */
 function updateHeaderText(sectionId) {
-    const headerTextElement = document.querySelector('header h1');
-    if (headerTextElement) {
-        switch (sectionId) {
-            case 'homepage':
-                headerTextElement.textContent = window.siteConfig?.header?.title || "Homepage";
-                break;
-            case 'navpage':
-                headerTextElement.textContent = window.siteConfig?.header?.navTitle || "Navigation";
-                break;
-            default:
-                headerTextElement.textContent = "Homepage";
-                break;
-        }
+    if (cachedElements.headerH1) {
+        const config = window.siteConfig?.header;
+        cachedElements.headerH1.textContent = sectionId === 'navpage' 
+            ? (config?.navTitle || 'Navigation')
+            : (config?.title || 'Homepage');
     }
 }
 
@@ -137,122 +152,72 @@ function switchToCard(newCardNumber) {
  * @param {Array} cards - 卡片数据数组
  */
 function renderCards(cards) {
-    const parentContainer = document.querySelector('.cardContainer');
+    const parentContainer = cachedElements.cardContainer || document.querySelector('.cardContainer');
     if (!parentContainer) {
         console.error('Card container not found');
         return;
     }
 
+    // 使用 DocumentFragment 批量插入 DOM
+    const fragment = document.createDocumentFragment();
+
     cards.forEach(card => {
         const cardElement = document.createElement('div');
-        cardElement.classList.add('cardItem');
+        cardElement.className = card.id === 'card1' ? 'cardItem active' : 'cardItem';
         cardElement.id = card.id;
-        if (card.id === 'card1') {
-            cardElement.classList.add('active');
-        }
 
         const gridContainer = document.createElement('div');
-        gridContainer.classList.add('grid-container');
+        gridContainer.className = 'grid-container';
 
+        // 批量创建链接
         card.items.forEach(item => {
             const link = document.createElement('a');
             link.href = item.url;
             link.target = '_blank';
-            link.classList.add('grid-item');
-            link.setAttribute('data-url', item.url);
-
-            const img = document.createElement('img');
-            img.classList.add('icon');
-            img.src = item.icon;
-            img.alt = 'Website Icon';
-
-            const span = document.createElement('span');
-            span.textContent = item.name;
-
-            link.appendChild(img);
-            link.appendChild(span);
+            link.className = 'grid-item';
+            link.dataset.url = item.url;
+            link.innerHTML = `<img class="icon" src="${item.icon}" alt="" loading="lazy"><span>${item.name}</span>`;
             gridContainer.appendChild(link);
         });
 
         cardElement.appendChild(gridContainer);
-        parentContainer.appendChild(cardElement);
+        fragment.appendChild(cardElement);
     });
 
-    // 为生成的卡片绑定事件
-    const cardItems = document.querySelectorAll('.cardItem');
-    cardItems.forEach(card => {
-        card.addEventListener('click', function() {
-            const cardNumber = parseInt(this.id.replace('card', ''), 10);
-            switchToCard(cardNumber);
-        });
-    });
-}
-
-/**
- * 初始化回到顶部和底部按钮
- */
-function initScrollButtons() {
-    const backToTopBtn = document.getElementById('backToTop');
-    if (backToTopBtn) {
-        backToTopBtn.addEventListener('click', function() {
-            scrollToPosition(0, 500);
-        });
-    }
+    parentContainer.appendChild(fragment);
     
-    const backToBottomBtn = document.getElementById('backToBottom');
-    if (backToBottomBtn) {
-        backToBottomBtn.addEventListener('click', function() {
-            const documentHeight = Math.max(
-                document.body.scrollHeight, document.documentElement.scrollHeight,
-                document.body.offsetHeight, document.documentElement.offsetHeight,
-                document.body.clientHeight, document.documentElement.clientHeight
-            );
-            const windowHeight = window.innerHeight;
-            const targetPosition = documentHeight - windowHeight;
-            scrollToPosition(targetPosition, 700);
-        });
-    }
+    // 事件委托已在 initNavigation 中设置，无需重复绑定
 }
 
 /**
  * 滚动到指定位置
- * @param {number} target - 目标位置
- * @param {number} duration - 动画持续时间
  */
-function scrollToPosition(target, duration) {
-    const start = window.scrollY;
-    const distance = target - start;
-    const startTime = performance.now();
-    
-    function scroll() {
-        const currentTime = performance.now();
-        const timeElapsed = currentTime - startTime;
-        const run = easeInOutQuad(timeElapsed, start, distance, duration);
-        window.scrollTo(0, run);
-        if (timeElapsed < duration) {
-            requestAnimationFrame(scroll);
-        }
-    }
-    
-    requestAnimationFrame(scroll);
+function scrollToPosition(target) {
+    window.scrollTo({ top: target, behavior: 'smooth' });
 }
 
 /**
- * 缓动函数
+ * 滚动到顶部
  */
-function easeInOutQuad(t, b, c, d) {
-    t /= d / 2;
-    if (t < 1) return c / 2 * t * t + b;
-    t--;
-    return -c / 2 * (t * (t - 2) - 1) + b;
+function scrollToTop() {
+    scrollToPosition(0);
+}
+
+/**
+ * 滚动到底部
+ */
+function scrollToBottom() {
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    scrollToPosition(maxScroll);
 }
 
 export default {
     initNavigation,
     renderCards,
-    initScrollButtons,
     showSection,
     startTimer,
     clearTimer,
-    switchToCard
+    switchToCard,
+    scrollToTop,
+    scrollToBottom
 };
