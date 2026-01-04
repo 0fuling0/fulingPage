@@ -281,6 +281,7 @@ header::before {
     right: 0;
     height: 60%;
     background: var(--glass-highlight);
+    border-radius: var(--header-border-radius);
     pointer-events: none;
     opacity: 0.6;
     z-index: 0;
