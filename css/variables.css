@@ -5,32 +5,32 @@
     --background-color: #0f172a;
     --font-color: #1e293b;
     
-    /* Modern Glass 玻璃效果 - 更柔和的渐变 */
+    /* Modern Glass 玻璃效果 - 更通透 */
     --glass-background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.9) 0%,
-        rgba(241, 245, 249, 0.8) 50%,
-        rgba(226, 232, 240, 0.75) 100%
+        rgba(255, 255, 255, 0.65) 0%,
+        rgba(241, 245, 249, 0.55) 50%,
+        rgba(226, 232, 240, 0.5) 100%
     );
-    --glass-background-solid: rgba(248, 250, 252, 0.85);
-    --glass-border: rgba(255, 255, 255, 0.6);
-    --glass-border-bottom: rgba(148, 163, 184, 0.3);
+    --glass-background-solid: rgba(248, 250, 252, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-border-bottom: rgba(148, 163, 184, 0.25);
     --glass-background-dark: linear-gradient(
         135deg,
-        rgba(30, 41, 59, 0.9) 0%,
-        rgba(15, 23, 42, 0.85) 50%,
-        rgba(2, 6, 23, 0.8) 100%
+        rgba(30, 41, 59, 0.7) 0%,
+        rgba(15, 23, 42, 0.6) 50%,
+        rgba(2, 6, 23, 0.55) 100%
     );
-    --glass-background-dark-solid: rgba(30, 41, 59, 0.9);
-    --glass-border-dark: rgba(100, 116, 139, 0.3);
+    --glass-background-dark-solid: rgba(30, 41, 59, 0.65);
+    --glass-border-dark: rgba(100, 116, 139, 0.25);
     --glass-shadow: 
-        0 4px 6px -1px rgba(0, 0, 0, 0.1),
-        0 2px 4px -2px rgba(0, 0, 0, 0.1),
-        0 0 0 1px rgba(255, 255, 255, 0.05);
+        0 4px 6px -1px rgba(0, 0, 0, 0.08),
+        0 2px 4px -2px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(255, 255, 255, 0.08);
     --glass-shadow-lg: 
-        0 10px 15px -3px rgba(0, 0, 0, 0.1),
-        0 4px 6px -4px rgba(0, 0, 0, 0.1),
-        0 0 0 1px rgba(255, 255, 255, 0.1);
+        0 10px 15px -3px rgba(0, 0, 0, 0.08),
+        0 4px 6px -4px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(255, 255, 255, 0.12);
     --glass-highlight: linear-gradient(
         135deg,
         rgba(255, 255, 255, 0.5) 0%,
@@ -38,8 +38,9 @@
         transparent 60%
     );
     --glass-border-width: 1px;
-    --blur-amount: 20px;
-    --blur-amount-lg: 40px;
+    --blur-amount: 28px;
+    --blur-amount-lg: 45px;
+    --noise-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
     
     /* 现代内发光效果 */
     --card-inner-shadow: 
@@ -88,8 +89,8 @@
     /* 元素属性 - 更大的圆角 */
     --footer-background: linear-gradient(
         135deg,
-        rgba(248, 250, 252, 0.9) 0%,
-        rgba(241, 245, 249, 0.85) 100%
+        rgba(248, 250, 252, 0.65) 0%,
+        rgba(241, 245, 249, 0.55) 100%
     );
     --footer-border-radius: 24px 24px 0 0;
     --footer-transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -148,8 +149,8 @@
     --tertiary-color: #818cf8;
     --footer-background: linear-gradient(
         135deg,
-        rgba(30, 41, 59, 0.95) 0%,
-        rgba(15, 23, 42, 0.9) 100%
+        rgba(30, 41, 59, 0.7) 0%,
+        rgba(15, 23, 42, 0.6) 100%
     );
     --glass-shadow: 
         0 4px 6px -1px rgba(0, 0, 0, 0.3),

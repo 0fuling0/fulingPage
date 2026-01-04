@@ -9,21 +9,36 @@
     padding: 12px;
 }
 
-/* 现代玻璃态通用样式 */
-.glass-effect {
+/* ========== 玻璃态通用样式 ========== */
+header,
+footer,
+.card {
     background: var(--glass-background);
-    backdrop-filter: blur(var(--blur-amount));
-    -webkit-backdrop-filter: blur(var(--blur-amount));
+    backdrop-filter: blur(var(--blur-amount)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--blur-amount)) saturate(180%);
     border: var(--glass-border-width) solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    transition: all var(--transition-normal);
+    box-shadow: 
+        var(--glass-shadow),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1);
     position: relative;
     overflow: hidden;
-    border-radius: var(--card-radius);
+    box-sizing: border-box;
 }
 
-/* 现代顶部柔光效果 */
-.glass-effect::before {
+html.dark-mode header,
+html.dark-mode footer,
+html.dark-mode .card {
+    background: var(--glass-background-dark);
+    border-color: var(--glass-border-dark);
+    box-shadow: 
+        var(--glass-shadow),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* 玻璃态顶部柔光效果 */
+header::before,
+footer::before,
+.card::before {
     content: '';
     position: absolute;
     top: 0;
@@ -35,17 +50,20 @@
     opacity: 0.7;
 }
 
-/* 边框发光效果 - 悬浮时 */
-.glass-effect::after {
+/* 玻璃态边框渐变光效 */
+header::after,
+footer::after,
+.card::after {
     content: '';
     position: absolute;
     inset: -1px;
     border-radius: inherit;
     background: linear-gradient(
         135deg,
-        rgba(59, 130, 246, 0.3) 0%,
-        transparent 50%,
-        rgba(139, 92, 246, 0.2) 100%
+        rgba(255, 255, 255, 0.3) 0%,
+        transparent 40%,
+        transparent 60%,
+        rgba(255, 255, 255, 0.1) 100%
     );
     -webkit-mask: 
         linear-gradient(#fff 0 0) content-box, 
@@ -61,21 +79,22 @@
     pointer-events: none;
 }
 
-.glass-effect:hover::after {
-    opacity: 1;
-}
-
-html.dark-mode .glass-effect {
-    background: var(--glass-background-dark);
-    border-color: var(--glass-border-dark);
+html.dark-mode header::after,
+html.dark-mode footer::after,
+html.dark-mode .card::after {
+    background: linear-gradient(
+        135deg,
+        rgba(96, 165, 250, 0.25) 0%,
+        transparent 40%,
+        transparent 60%,
+        rgba(139, 92, 246, 0.15) 100%
+    );
 }
 
 /* ========== 现代风格头部导航 ========== */
 header {
     padding: 0;
     text-align: center;
-    box-shadow: var(--glass-shadow);
-    background: var(--glass-background);
     width: 100%;
     max-width: none;
     margin: 0 0 16px;
@@ -85,11 +104,10 @@ header {
     border-radius: 0 0 var(--card-radius) var(--card-radius);
     backdrop-filter: blur(var(--blur-amount-lg));
     -webkit-backdrop-filter: blur(var(--blur-amount-lg));
-    border: var(--glass-border-width) solid var(--glass-border);
     border-top: none;
-    transition: all var(--transition-normal), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-sizing: border-box;
-    overflow: visible;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    contain: layout style;
+    will-change: transform;
 }
 
 /* 头部滚动隐藏状态 */
@@ -336,20 +354,14 @@ main.container {
 footer {
     padding: 0;
     text-align: center;
-    box-shadow: var(--glass-shadow);
-    background: var(--footer-background);
     width: calc(100% - 24px);
     max-width: 1376px;
     margin: 16px auto 0;
     border-radius: var(--footer-border-radius);
     backdrop-filter: blur(var(--blur-amount-lg));
     -webkit-backdrop-filter: blur(var(--blur-amount-lg));
-    border: var(--glass-border-width) solid var(--glass-border);
     border-bottom: none;
-    transition: all var(--transition-normal);
-    box-sizing: border-box;
-    position: relative;
-    overflow: hidden;
+    transition: var(--transition-normal);
 }
 
 /* 页脚内容容器 */

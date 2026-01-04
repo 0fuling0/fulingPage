@@ -39,6 +39,12 @@
         ],
         "interval": 10000
     },
+    "rainEffect": {
+        "enabled": true,
+        "dropCount": 60,
+        "dropSpeed": 8,
+        "color": "rgba(174, 194, 224, 0.5)"
+    },
     "footer": {
         "copyright": "© 2024 Fuling Chen. All rights reserved."
     },

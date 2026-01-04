@@ -6,47 +6,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" id="theme-color-meta" content="">
     <meta name="description" content="">
+    <meta name="color-scheme" content="light dark">
     <title>loading...</title>
+    
+    <!-- 预连接外部资源 -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://gcore.jsdelivr.net">
+    
+    <!-- 核心样式 -->
     <link rel="stylesheet" href="main.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css" />
     <link rel="icon" type="image/webp" sizes="64x64"
         href="https://gcore.jsdelivr.net/gh/0fuling0/mysource@main/img/favicon.webp">
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/twikoo@1.6.41/dist/twikoo.min.js"></script>
+    
+    <!-- 延迟加载的外部资源 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css" media="print" onload="this.media='all'">
+    
+    <!-- 延迟加载的脚本 -->
+    <script defer src="https://cdn.jsdelivr.net/npm/twikoo@1.6.41/dist/twikoo.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js"></script>
-    <meta name="color-scheme" content="light dark">
+    
+    <!-- 暗色模式早期初始化 -->
     <script>
-        let path = window.location.pathname;
-        let hash = window.location.hash;
-        if (!path.endsWith("/") && path !== "/index.html" && !path.includes(".")) {
-            window.location.href = path + "/" + hash;
-        }
-    </script>
-    <script defer>
         (function() {
-            let darkMode = false;
-            const html = document.documentElement;
-            const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
-            if (localStorage.getItem('darkMode') !== null) {
-                darkMode = localStorage.getItem('darkMode') === 'true';
-            } else if (prefersDarkMode) {
-                darkMode = true;
-            }
-            
-            if (darkMode) {
-                html.classList.add('dark-mode');
-                if (document.body) {
-                    document.body.classList.add('dark-mode');
-                }
-            } else {
-                html.classList.add('light');
-                if (document.body) {
-                    document.body.classList.add('light');
-                }
-            }
+            const h = document.documentElement;
+            const d = localStorage.getItem('darkMode');
+            const p = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isDark = d !== null ? d === 'true' : p;
+            h.classList.add(isDark ? 'dark-mode' : 'light');
         })();
+        // 路径修正
+        let path = window.location.pathname;
+        if (!path.endsWith('/') && path !== '/index.html' && !path.includes('.')) {
+            window.location.href = path + '/' + window.location.hash;
+        }
     </script>
     <script type="module" src="main.js"></script>
 </head>

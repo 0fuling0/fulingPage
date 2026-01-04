@@ -8,6 +8,7 @@ import search from './js/search.js';
 import siteInfo from './js/siteInfo.js';
 import utils from './js/utils.js';
 import headerFooter from './js/headerFooter.js';
+import rainEffect from './js/rainEffect.js';
 
 // 将模块暴露给全局，用于HTML内联事件调用
 utils.exposeModuleToGlobal('carouselModule', {
@@ -87,6 +88,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 初始化背景图片轮播
         backgroundImage.init(config.backgroundImages);
+        
+        // 初始化雨滴效果
+        if (config.rainEffect?.enabled !== false) {
+            rainEffect.init(config.rainEffect);
+        }
         
         // 初始化轮播图
         if (config.carousel && Array.isArray(config.carousel.images)) {

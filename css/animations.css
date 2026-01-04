@@ -80,6 +80,11 @@ html.dark-mode::-webkit-scrollbar-thumb:hover {
     justify-content: center;
     align-items: center;
     z-index: 9999;
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    contain: strict;
+}
+    align-items: center;
+    z-index: 9999;
     transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -124,6 +129,7 @@ html.dark-mode .loading-container {
         0 4px 12px rgba(0, 0, 0, 0.1);
     animation: modernBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite alternate;
     position: relative;
+    will-change: transform;
 }
 
 .shadow {

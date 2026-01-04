@@ -1,73 +1,92 @@
 /**
- * 为全局函数提供的桥接对象
- * 用于存储需要从window全局调用的模块化函数
+ * 工具函数模块 - 性能优化版
  */
-window.moduleExports = {};
 
 /**
  * 处理页面加载动画
  */
 function handleLoadingAnimation() {
-    setTimeout(() => {
-        const loadingContainer = document.querySelector('.loading-container');
-        if (loadingContainer) {
-            loadingContainer.classList.add('fade-out');
-            setTimeout(() => {
-                loadingContainer.remove();
-            }, 500);
+    // 使用 requestIdleCallback 在空闲时移除
+    const remove = () => {
+        const el = document.querySelector('.loading-container');
+        if (el) {
+            el.classList.add('fade-out');
+            setTimeout(() => el.remove(), 500);
         }
-    }, 1000);
+    };
+    
+    if ('requestIdleCallback' in window) {
+        setTimeout(() => requestIdleCallback(remove), 800);
+    } else {
+        setTimeout(remove, 1000);
+    }
 }
 
 /**
- * 加载配置文件
- * @returns {Promise} 包含配置数据的Promise
+ * 加载配置文件（并行请求）
  */
 function loadConfigs() {
     return Promise.all([
-        fetch('config.json').then(response => response.json()),
-        fetch('nav.json').then(response => response.json())
-    ])
-    .catch(error => {
-        console.error('Error loading config files:', error);
+        fetch('config.json').then(r => r.json()),
+        fetch('nav.json').then(r => r.json())
+    ]).catch(e => {
+        console.error('Config load error:', e);
         return [null, null];
     });
 }
 
 /**
- * 初始化网格项点击事件
+ * 初始化网格项点击事件（使用事件委托）
  */
 function initGridItemEvents() {
-    const gridItems = document.querySelectorAll('.grid-item');
-    gridItems.forEach(function (item) {
-        item.addEventListener('click', function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-            const url = item.getAttribute('data-url');
-            window.open(url, '_blank');
-        });
-    });
+    // 使用事件委托而非为每个元素绑定
+    document.addEventListener('click', (e) => {
+        const item = e.target.closest('.grid-item');
+        if (item) {
+            e.preventDefault();
+            const url = item.dataset.url;
+            if (url) window.open(url, '_blank');
+        }
+    }, { passive: false });
 }
 
 /**
- * 为DOM元素注册全局事件处理函数
- * 解决ES模块化后，HTML内联事件无法直接调用模块函数的问题
- * @param {Object} handlers - 处理函数映射
+ * 注册全局事件处理函数
  */
 function registerGlobalEventHandlers(handlers) {
-    // 为window对象添加事件处理函数
-    Object.entries(handlers).forEach(([name, handler]) => {
-        window[name] = handler;
-    });
+    Object.assign(window, handlers);
 }
 
 /**
  * 将模块导出为全局可访问
- * @param {string} name - 模块名称
- * @param {Object} module - 模块对象
  */
 function exposeModuleToGlobal(name, module) {
     window[name] = module;
+}
+
+/**
+ * 防抖函数
+ */
+function debounce(fn, delay = 100) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delay);
+    };
+}
+
+/**
+ * 节流函数
+ */
+function throttle(fn, limit = 16) {
+    let inThrottle;
+    return (...args) => {
+        if (!inThrottle) {
+            fn(...args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
 }
 
 export default {
@@ -75,5 +94,7 @@ export default {
     loadConfigs,
     initGridItemEvents,
     registerGlobalEventHandlers,
-    exposeModuleToGlobal
+    exposeModuleToGlobal,
+    debounce,
+    throttle
 };

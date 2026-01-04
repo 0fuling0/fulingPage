@@ -67,7 +67,17 @@ function updateClock() {
  */
 function initClock() {
     updateClock();
-    setInterval(updateClock, 1000);
+    // 使用页面可见性API优化
+    let clockInterval = setInterval(updateClock, 1000);
+    
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            clearInterval(clockInterval);
+        } else {
+            updateClock(); // 立即更新
+            clockInterval = setInterval(updateClock, 1000);
+        }
+    }, { passive: true });
 }
 
 /**

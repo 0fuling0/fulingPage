@@ -1,14 +1,17 @@
 /*---------- 2. 全局样式与重置 - Modern Aero 2.0 ----------*/
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 body, h1, h2, h3, p, ul {
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
 }
 
 html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
-    font-smoothing: always;
+    text-rendering: optimizeLegibility;
 }
 
 @font-face {
@@ -32,12 +35,11 @@ body {
         #f1f5f9 100%
     );
     background-size: cover;
-    background-position: center center;
+    background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
     display: flex;
     flex-direction: column;
-    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease;
 }
 
 /* 现代背景覆盖层 */

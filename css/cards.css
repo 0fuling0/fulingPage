@@ -486,6 +486,7 @@ html.dark-mode div.aplayer-pic {
 
 /* 搜索组件 */
 .search-container {
+    position: relative;
     width: 100%;
     max-width: 700px;
     margin: 0 auto;
@@ -493,7 +494,6 @@ html.dark-mode div.aplayer-pic {
     display: flex;
     align-items: stretch;
     justify-content: center;
-    overflow: hidden;
     border-radius: var(--card-radius);
 }
 
@@ -650,7 +650,7 @@ html.dark-mode .select-styled:hover {
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
-    right: auto;
+    min-width: 400px;
     border: 1px solid var(--glass-border);
     border-radius: var(--card-radius-sm);
     background: var(--glass-background-solid);

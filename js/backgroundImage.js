@@ -1,122 +1,259 @@
 /**
- * 背景图片轮播模块 - 无闪烁版
- * 使用双层叠加实现平滑过渡
+ * 背景图片轮播模块
+ * 使用交叉淡入淡出实现无缝过渡
  */
 
-let images = [];
-let index = 0;
-let timer = null;
-const loaded = new Set();
-
-// 背景层元素
-let bgLayer1 = null;
-let bgLayer2 = null;
-let activeLayer = 1;
-
-// 创建背景层
-const createLayers = () => {
-    if (bgLayer1) return;
-    
-    const createLayer = (zIndex) => {
-        const layer = document.createElement('div');
-        layer.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            z-index: ${zIndex};
-            transition: opacity 1.5s ease;
-            pointer-events: none;
-        `;
-        document.body.prepend(layer);
-        return layer;
-    };
-    
-    bgLayer2 = createLayer(-2);
-    bgLayer1 = createLayer(-1);
+// 状态管理
+const state = {
+    images: [],
+    currentIndex: 0,
+    isTransitioning: false,
+    timer: null,
+    interval: 30000
 };
 
-// 预加载图片
-const preload = (src) => {
-    if (loaded.has(src)) return Promise.resolve();
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => { loaded.add(src); resolve(); };
-        img.onerror = resolve;
-        img.src = src;
-    });
-};
+// 预加载缓存
+const preloadCache = new Set();
 
-// 显示背景（淡入淡出）
-const show = async (transition = true) => {
-    if (!images.length) return;
+// DOM 元素
+let container = null;
+let bottomLayer = null;  // 底层（新图片先放这里）
+let topLayer = null;     // 顶层（当前显示的图片）
+
+/**
+ * 创建背景层元素
+ */
+function createBackgroundLayers() {
+    if (container) return;
     
-    createLayers();
+    container = document.createElement('div');
+    container.id = 'bg-container';
+    container.style.cssText = `
+        position: fixed;
+        inset: 0;
+        z-index: -10;
+        overflow: hidden;
+        pointer-events: none;
+        background: #1a1a2e;
+    `;
     
-    const src = images[index];
-    await preload(src);
+    // 底层 - 新图片先放这里，始终可见
+    bottomLayer = document.createElement('div');
+    bottomLayer.className = 'bg-layer';
+    bottomLayer.style.cssText = `
+        position: absolute;
+        inset: 0;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 1;
+    `;
     
-    const currentLayer = activeLayer === 1 ? bgLayer1 : bgLayer2;
-    const nextLayer = activeLayer === 1 ? bgLayer2 : bgLayer1;
+    // 顶层 - 当前图片，淡出时显示底层
+    topLayer = document.createElement('div');
+    topLayer.className = 'bg-layer';
+    topLayer.style.cssText = `
+        position: absolute;
+        inset: 0;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 1;
+        transition: opacity 1.5s ease-in-out;
+        will-change: opacity;
+    `;
     
-    // 设置新图片到下层
-    nextLayer.style.backgroundImage = `url('${src}')`;
-    nextLayer.style.opacity = '0';
+    container.appendChild(bottomLayer);
+    container.appendChild(topLayer);
     
-    if (transition) {
-        // 强制重绘
-        nextLayer.offsetHeight;
-        
-        // 淡入新层，淡出旧层
-        nextLayer.style.opacity = '1';
-        currentLayer.style.opacity = '0';
-        
-        // 切换活动层
-        activeLayer = activeLayer === 1 ? 2 : 1;
-    } else {
-        // 无过渡，直接显示
-        nextLayer.style.transition = 'none';
-        nextLayer.style.opacity = '1';
-        currentLayer.style.opacity = '0';
-        nextLayer.offsetHeight;
-        nextLayer.style.transition = 'opacity 1.5s ease';
-        activeLayer = activeLayer === 1 ? 2 : 1;
+    document.body.insertBefore(container, document.body.firstChild);
+}
+
+/**
+ * 预加载图片
+ */
+function preloadImage(src) {
+    if (preloadCache.has(src)) {
+        return Promise.resolve(true);
     }
     
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            preloadCache.add(src);
+            resolve(true);
+        };
+        img.onerror = () => resolve(false);
+        img.src = src;
+    });
+}
+
+/**
+ * 预加载下一张图片
+ */
+function preloadNext() {
+    const nextIndex = (state.currentIndex + 1) % state.images.length;
+    preloadImage(state.images[nextIndex]);
+}
+
+/**
+ * 切换到指定索引的背景
+ */
+async function switchTo(index, animate = true) {
+    if (state.isTransitioning || !state.images.length) return;
+    
+    const src = state.images[index];
+    if (!src) return;
+    
+    state.isTransitioning = true;
+    
+    // 预加载图片
+    const loaded = await preloadImage(src);
+    if (!loaded) {
+        state.isTransitioning = false;
+        return;
+    }
+    
+    if (animate) {
+        // 1. 先将新图片放到底层（此时顶层遮挡，用户看不到）
+        bottomLayer.style.backgroundImage = `url('${src}')`;
+        
+        // 强制重绘确保图片已设置
+        void bottomLayer.offsetHeight;
+        
+        // 2. 淡出顶层，露出底层的新图片
+        topLayer.style.opacity = '0';
+        
+        // 3. 等待过渡完成
+        await new Promise(resolve => setTimeout(resolve, 1600));
+        
+        // 4. 将新图片也设置到顶层，然后立即恢复顶层不透明
+        topLayer.style.transition = 'none';
+        topLayer.style.backgroundImage = `url('${src}')`;
+        topLayer.style.opacity = '1';
+        
+        // 强制重绘后恢复过渡
+        void topLayer.offsetHeight;
+        topLayer.style.transition = 'opacity 1.5s ease-in-out';
+        
+    } else {
+        // 无动画：直接设置两层
+        topLayer.style.transition = 'none';
+        topLayer.style.backgroundImage = `url('${src}')`;
+        bottomLayer.style.backgroundImage = `url('${src}')`;
+        topLayer.style.opacity = '1';
+        void topLayer.offsetHeight;
+        topLayer.style.transition = 'opacity 1.5s ease-in-out';
+    }
+    
+    state.currentIndex = index;
+    state.isTransitioning = false;
+    
     // 预加载下一张
-    preload(images[(index + 1) % images.length]);
-};
+    preloadNext();
+    
+    // 保存当前索引
+    try {
+        localStorage.setItem('bgIndex', index);
+    } catch (e) {}
+}
 
-// 下一张
-const next = () => {
-    index = (index + 1) % images.length;
-    show();
-};
+/**
+ * 切换到下一张背景
+ */
+function next() {
+    const nextIndex = (state.currentIndex + 1) % state.images.length;
+    switchTo(nextIndex, true);
+}
 
-// 初始化
-const init = (config) => {
+/**
+ * 切换到上一张背景
+ */
+function prev() {
+    const prevIndex = (state.currentIndex - 1 + state.images.length) % state.images.length;
+    switchTo(prevIndex, true);
+}
+
+/**
+ * 启动自动轮播
+ */
+function startAutoPlay() {
+    stopAutoPlay();
+    if (state.images.length <= 1) return;
+    state.timer = setInterval(next, state.interval);
+}
+
+/**
+ * 停止自动轮播
+ */
+function stopAutoPlay() {
+    if (state.timer) {
+        clearInterval(state.timer);
+        state.timer = null;
+    }
+}
+
+/**
+ * 处理页面可见性变化
+ */
+function handleVisibilityChange() {
+    if (document.hidden) {
+        stopAutoPlay();
+    } else {
+        startAutoPlay();
+    }
+}
+
+/**
+ * 初始化背景轮播
+ */
+function init(config) {
     if (!config?.images?.length) return;
     
-    images = config.images;
-    index = parseInt(localStorage.getItem('bgIdx')) || 0;
-    index = index % images.length;
+    state.images = config.images;
+    state.interval = config.interval || 30000;
     
-    // 清除 body 背景
+    try {
+        const savedIndex = parseInt(localStorage.getItem('bgIndex')) || 0;
+        state.currentIndex = savedIndex % state.images.length;
+    } catch (e) {
+        state.currentIndex = 0;
+    }
+    
     document.body.style.backgroundImage = 'none';
     
-    // 显示当前图片
-    show(false);
+    createBackgroundLayers();
+    switchTo(state.currentIndex, false);
+    startAutoPlay();
     
-    // 启动轮播
-    if (timer) clearInterval(timer);
-    timer = setInterval(next, config.interval || 30000);
-    
-    // 保存索引
-    setInterval(() => localStorage.setItem('bgIdx', index), 5000);
-};
+    document.addEventListener('visibilitychange', handleVisibilityChange, { passive: true });
+}
 
-export default { init };
+/**
+ * 销毁背景轮播
+ */
+function destroy() {
+    stopAutoPlay();
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    
+    if (container) {
+        container.remove();
+        container = null;
+        bottomLayer = null;
+        topLayer = null;
+    }
+    
+    state.images = [];
+    state.currentIndex = 0;
+    preloadCache.clear();
+}
+
+export default {
+    init,
+    destroy,
+    next,
+    prev,
+    switchTo,
+    startAutoPlay,
+    stopAutoPlay
+};

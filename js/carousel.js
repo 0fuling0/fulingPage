@@ -309,10 +309,14 @@ function stopAutoSlide() {
  * @param {number} index - 当前活动的指示器索引
  */
 function updateIndicators(index) {
-    const dots = document.querySelectorAll('.carousel-dot');
-    dots.forEach((dot, i) => {
-        dot.classList.toggle('active', i === index);
-    });
+    // 使用缓存的指示器元素
+    const indicators = cachedCarouselElements.indicators;
+    if (!indicators) return;
+    
+    const dots = indicators.children;
+    for (let i = 0; i < dots.length; i++) {
+        dots[i].classList.toggle('active', i === index);
+    }
 }
 
 /**
@@ -362,6 +366,9 @@ function initCarouselIndicators() {
     });
     
     container.appendChild(indicators);
+    
+    // 更新缓存引用
+    cachedCarouselElements.indicators = indicators;
 }
 
 /**
