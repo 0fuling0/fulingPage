@@ -1,5 +1,5 @@
 /* ===== Background Image ===== */
-const bgState = { images: [], currentIndex: 0, isTransitioning: false, timer: null, interval: 30000 };
+const bgState = { images: [], currentIndex: 0, isTransitioning: false, timer: null, interval: 30000, apiUrls: new Set() };
 const preloadCache = new Set();
 let bgContainer, bottomLayer, topLayer;
 
@@ -17,13 +17,23 @@ function createLayers() {
     document.body.insertBefore(bgContainer, document.body.firstChild);
 }
 
+function isApiUrl(src) {
+    return bgState.apiUrls.has(src);
+}
+
+function getCacheBustedUrl(src) {
+    const sep = src.includes('?') ? '&' : '?';
+    return src + sep + '_t=' + Date.now();
+}
+
 function preloadImage(src) {
-    if (preloadCache.has(src)) return Promise.resolve(true);
+    if (!isApiUrl(src) && preloadCache.has(src)) return Promise.resolve(true);
+    const loadUrl = isApiUrl(src) ? getCacheBustedUrl(src) : src;
     return new Promise(res => {
         const img = new Image();
-        img.onload = () => { preloadCache.add(src); res(true); };
+        img.onload = () => { if (!isApiUrl(src)) preloadCache.add(src); res(true); };
         img.onerror = () => res(false);
-        img.src = src;
+        img.src = loadUrl;
     });
 }
 
@@ -33,19 +43,20 @@ async function switchBg(index, animate = true) {
     if (!src) return;
     bgState.isTransitioning = true;
     if (!(await preloadImage(src))) { bgState.isTransitioning = false; return; }
+    const displayUrl = isApiUrl(src) ? getCacheBustedUrl(src) : src;
     if (animate) {
-        bottomLayer.style.backgroundImage = `url('${src}')`;
+        bottomLayer.style.backgroundImage = `url('${displayUrl}')`;
         void bottomLayer.offsetHeight;
         topLayer.style.opacity = '0';
         await new Promise(r => setTimeout(r, 1600));
         topLayer.style.transition = 'none';
-        topLayer.style.backgroundImage = `url('${src}')`;
+        topLayer.style.backgroundImage = `url('${displayUrl}')`;
         topLayer.style.opacity = '1';
         void topLayer.offsetHeight;
         topLayer.style.transition = 'opacity 1.5s ease-in-out';
     } else {
         topLayer.style.transition = 'none';
-        topLayer.style.backgroundImage = bottomLayer.style.backgroundImage = `url('${src}')`;
+        topLayer.style.backgroundImage = bottomLayer.style.backgroundImage = `url('${displayUrl}')`;
         topLayer.style.opacity = '1';
         void topLayer.offsetHeight;
         topLayer.style.transition = 'opacity 1.5s ease-in-out';
@@ -63,6 +74,7 @@ function initBackgroundImage(config) {
     if (!config?.images?.length) return;
     bgState.images = config.images;
     bgState.interval = config.interval || 30000;
+    bgState.apiUrls = new Set(config.api || []);
     try { bgState.currentIndex = (parseInt(localStorage.getItem('bgIndex')) || 0) % bgState.images.length; } catch { bgState.currentIndex = 0; }
     document.body.style.backgroundImage = 'none';
     createLayers();

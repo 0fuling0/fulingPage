@@ -29,13 +29,14 @@
     },
     "backgroundImages": {
         "images": [
-            "img/0.webp",
             "https://api.xsot.cn/bing?jump=true",
-            "img/1.webp",
-            "img/2.webp",
-            "img/3.webp",
-            "img/4.webp",
-            "img/5.webp"
+            "https://www.dmoe.cc/random.php",
+            "https://t.mwm.moe/fj"
+        ],
+        "api": [
+            "https://api.xsot.cn/bing?jump=true",
+            "https://www.dmoe.cc/random.php",
+            "https://t.mwm.moe/fj"
         ],
         "interval": 10000
     },
