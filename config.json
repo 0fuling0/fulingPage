@@ -55,11 +55,12 @@
             {
                 "type": "clock",
                 "enabled": true,
-                "jinrishici": {
-                    "interval": 15000,
+                "hitokoto": {
+                    "url": "https://international.v1.hitokoto.cn/",
+                    "interval": 10000,
                     "messages": {
-                        "loading": "正在加载诗词...",
-                        "error": "获取诗词失败，请稍后再试...",
+                        "loading": "正在加载一言...",
+                        "error": "获取一言失败，请稍后再试...",
                         "default": "你好，又见面了！"
                     }
                 }
