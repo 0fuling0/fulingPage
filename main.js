@@ -99,12 +99,14 @@ function carouselPreload(src) {
 }
 
 function clearCarouselAnim(img) {
-    img.classList.remove('fade-out', 'fade-in', 'slide-out-left', 'slide-out-right', 'slide-in-right', 'slide-in-left');
+    const cl = img.classList;
+    cl.remove('fade-out', 'fade-in', 'slide-out-left', 'slide-out-right', 'slide-in-right', 'slide-in-left');
 }
 
 function updateCarouselDots() {
     if (!carouselEls.indicators) return;
-    [...carouselEls.indicators.children].forEach((d, i) => d.classList.toggle('active', i === carouselIdx));
+    const children = carouselEls.indicators.children;
+    for (let i = 0, len = children.length; i < len; i++) children[i].classList.toggle('active', i === carouselIdx);
 }
 
 function showSlide(i, dir = 0) {
@@ -139,15 +141,17 @@ function initCarouselIndicators() {
     c.querySelector('.carousel-indicators')?.remove();
     const wrap = document.createElement('div');
     wrap.className = 'carousel-indicators';
-    carouselImages.forEach((_, i) => {
+    for (let i = 0, len = carouselImages.length; i < len; i++) {
         const dot = document.createElement('div');
         dot.className = 'carousel-dot' + (i === carouselIdx ? ' active' : '');
-        dot.addEventListener('click', e => {
-            e.stopPropagation();
-            if (!carouselTransitioning && i !== carouselIdx) { showSlide(i, i > carouselIdx ? 1 : -1); stopCarouselAuto(); startCarouselAuto(); }
-        });
+        dot.addEventListener('click', (function(idx) {
+            return function(e) {
+                e.stopPropagation();
+                if (!carouselTransitioning && idx !== carouselIdx) { showSlide(idx, idx > carouselIdx ? 1 : -1); stopCarouselAuto(); startCarouselAuto(); }
+            };
+        })(i));
         wrap.appendChild(dot);
-    });
+    }
     c.appendChild(wrap);
     carouselEls.indicators = wrap;
 }
@@ -184,37 +188,68 @@ function setCarouselImages(imgs) { carouselFirstLoad = true; carouselIdx = 0; ca
 function setAutoSlideInterval(ms) { stopCarouselAuto(); if (carouselImages.length > 1 && ms > 0) carouselAutoIv = setInterval(carouselNext, ms); }
 function resetCarousel() { carouselFirstLoad = true; carouselIdx = 0; carouselTransitioning = false; setTimeout(initCarousel, 100); }
 
-/* ===== Clock & Hitokoto ===== */
-let dateF, timeF, hitokotoTimer;
+/* ===== Clock & Jinrishici (今日诗词) ===== */
+let dateF, timeF, jinrishiciTimer;
+let clockEls = null, lastDateStr = '', lastTimeStr = '';
 
 function updateClock() {
-    const clocks = document.querySelectorAll('.clock');
-    if (!clocks.length) return;
+    if (!clockEls) clockEls = document.querySelectorAll('.clock');
+    if (!clockEls.length) return;
     if (!dateF) {
         dateF = new Intl.DateTimeFormat('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         timeF = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     }
     const now = new Date(), d = dateF.format(now), t = timeF.format(now);
-    clocks.forEach(el => {
+    // Only update DOM when text actually changed
+    const dateChanged = d !== lastDateStr;
+    const timeChanged = t !== lastTimeStr;
+    if (!dateChanged && !timeChanged) return;
+    lastDateStr = d; lastTimeStr = t;
+    for (let i = 0, len = clockEls.length; i < len; i++) {
+        const el = clockEls[i];
         if (!el.querySelector('.clock-date'))
             el.innerHTML = '<div class="clock-date"></div><div class="clock-time"></div>';
-        el.querySelector('.clock-date').textContent = d;
-        el.querySelector('.clock-time').textContent = t;
-    });
+        if (dateChanged) el.querySelector('.clock-date').textContent = d;
+        if (timeChanged) el.querySelector('.clock-time').textContent = t;
+    }
 }
 
-function updateHitokoto(text) {
-    document.querySelectorAll('.hitokoto-container').forEach(c => c.textContent = text);
+function refreshClockEls() { clockEls = null; lastDateStr = ''; lastTimeStr = ''; }
+
+function updateJinrishici(text) {
+    const els = document.querySelectorAll('.hitokoto-container');
+    for (let i = 0, len = els.length; i < len; i++) els[i].textContent = text;
 }
 
-function getHitokoto() {
-    const url = window.siteConfig?.hitokoto?.url || 'https://international.v1.hitokoto.cn/';
-    const opts = { mode: 'cors', headers: { Accept: 'application/json' } };
-    fetch(url, opts)
-        .then(r => r.ok ? r : fetch('https://v1.hitokoto.cn/', opts))
-        .then(r => r.json())
-        .then(d => updateHitokoto(d.from ? `『${d.hitokoto}』—— ${d.from}` : d.hitokoto))
-        .catch(() => updateHitokoto(window.siteConfig?.hitokoto?.messages?.error || '获取一言失败'));
+function getJinrishici() {
+    if (typeof jinrishici !== 'undefined' && jinrishici.load) {
+        jinrishici.load(function(result) {
+            if (result && result.status === 'success') {
+                const d = result.data;
+                const origin = d.origin;
+                const info = origin ? `${origin.dynasty}·${origin.author}《${origin.title}》` : '';
+                updateJinrishici(info ? `『${d.content}』—— ${info}` : d.content);
+            } else {
+                updateJinrishici(window.siteConfig?.jinrishici?.messages?.error || '获取诗词失败');
+            }
+        }, function() {
+            updateJinrishici(window.siteConfig?.jinrishici?.messages?.error || '获取诗词失败');
+        });
+    } else {
+        fetch('https://v2.jinrishici.com/one.json', { method: 'GET', headers: { 'X-User-Token': 'default' } })
+            .then(r => r.json())
+            .then(result => {
+                if (result && result.status === 'success') {
+                    const d = result.data;
+                    const origin = d.origin;
+                    const info = origin ? `${origin.dynasty}·${origin.author}《${origin.title}》` : '';
+                    updateJinrishici(info ? `『${d.content}』—— ${info}` : d.content);
+                } else {
+                    updateJinrishici(window.siteConfig?.jinrishici?.messages?.error || '获取诗词失败');
+                }
+            })
+            .catch(() => updateJinrishici(window.siteConfig?.jinrishici?.messages?.error || '获取诗词失败'));
+    }
 }
 
 function updateRuntimeInfo(startDate) {
@@ -240,11 +275,11 @@ function initClock() {
     }, { passive: true });
 }
 
-function initHitokoto() {
-    updateHitokoto(window.siteConfig?.hitokoto?.messages?.loading || '正在加载一言...');
-    getHitokoto();
-    if (hitokotoTimer) clearInterval(hitokotoTimer);
-    hitokotoTimer = setInterval(getHitokoto, window.siteConfig?.hitokoto?.interval || 10000);
+function initJinrishici() {
+    updateJinrishici(window.siteConfig?.jinrishici?.messages?.loading || '正在加载诗词...');
+    getJinrishici();
+    if (jinrishiciTimer) clearInterval(jinrishiciTimer);
+    jinrishiciTimer = setInterval(getJinrishici, window.siteConfig?.jinrishici?.interval || 15000);
 }
 
 /* ===== Dark Mode & Header ===== */
@@ -291,14 +326,16 @@ function toggleDarkMode() {
 }
 
 function updateNavActive(sectionId) {
-    document.querySelectorAll('.header-nav a').forEach(a => {
+    const links = document.querySelectorAll('.header-nav a');
+    for (let i = 0, len = links.length; i < len; i++) {
+        const a = links[i];
         const onclick = a.getAttribute('onclick') || '', href = a.getAttribute('href') || '';
         a.classList.toggle('active',
             onclick.includes(`'${sectionId}'`) ||
             (sectionId === 'homepage' && href.includes('#home')) ||
             (sectionId === 'navpage' && href.includes('#nav'))
         );
-    });
+    }
 }
 
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -323,7 +360,8 @@ function initHeaderAndFooter(config) {
 let navTimer, currentCard = 1, mainEl, navHeaderH1, cardContainer;
 
 function showCard(n) {
-    document.querySelectorAll('.cardItem').forEach(c => c.classList.remove('active', 'current'));
+    const items = document.querySelectorAll('.cardItem');
+    for (let i = 0, len = items.length; i < len; i++) items[i].classList.remove('active', 'current');
     document.getElementById(`card${n}`)?.classList.add('active', 'current');
     document.querySelector(`.navButton[data-card="${currentCard}"]`)?.classList.remove('current');
     document.querySelector(`.navButton[data-card="${n}"]`)?.classList.add('current');
@@ -351,21 +389,24 @@ function renderCards(cards) {
     const parent = cardContainer || document.querySelector('.cardContainer');
     if (!parent) return;
     const frag = document.createDocumentFragment();
-    cards.forEach(card => {
+    for (let ci = 0, clen = cards.length; ci < clen; ci++) {
+        const card = cards[ci];
         const el = document.createElement('div');
         el.className = card.id === 'card1' ? 'cardItem active' : 'cardItem';
         el.id = card.id;
         const grid = document.createElement('div');
         grid.className = 'grid-container';
-        card.items.forEach(item => {
+        const items = card.items;
+        for (let ii = 0, ilen = items.length; ii < ilen; ii++) {
+            const item = items[ii];
             const a = document.createElement('a');
             a.href = item.url; a.target = '_blank'; a.className = 'grid-item'; a.dataset.url = item.url;
             a.innerHTML = `<img class="icon" src="${item.icon}" alt="" loading="lazy"><span>${item.name}</span>`;
             grid.appendChild(a);
-        });
+        }
         el.appendChild(grid);
         frag.appendChild(el);
-    });
+    }
     parent.appendChild(frag);
 }
 
@@ -388,7 +429,8 @@ function initNavigation() {
 }
 
 /* ===== Rain Effect (no wave/ripple interaction) ===== */
-let rainCanvas, rainCtx, drops = [], splashes = [], rainAnimId, rainRunning = false, cardRects = [];
+let rainCanvas, rainCtx, drops = [], splashes = [], splashCount = 0, rainAnimId, rainRunning = false, cardRects = [];
+let rainScrollThrottle = false;
 const rainCfg = {
     dropCount: 80, dropSpeed: 8, dropLength: 35, dropWidth: 2.5,
     color: 'rgba(174, 194, 224, 0.5)',
@@ -398,94 +440,140 @@ const rainCfg = {
 function rainResize() { if (rainCanvas) { rainCanvas.width = innerWidth; rainCanvas.height = innerHeight; } }
 function createDrop() {
     return { x: Math.random() * rainCanvas.width, y: Math.random() * rainCanvas.height - rainCanvas.height,
-        speed: rainCfg.dropSpeed + Math.random() * 5, length: rainCfg.dropLength + Math.random() * 10, opacity: 0.3 + Math.random() * 0.4 };
+        speed: rainCfg.dropSpeed + Math.random() * 5, length: rainCfg.dropLength + Math.random() * 10, opacity: 0.3 + Math.random() * 0.4,
+        hitCard: false, hitBottom: false };
 }
-function updateCardRects() { cardRects = [...document.querySelectorAll('.card, header, footer')].map(el => el.getBoundingClientRect()); }
-function isOnCard(x, y) { return cardRects.some(r => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom); }
+function updateCardRects() {
+    const els = document.querySelectorAll('.card, header, footer');
+    cardRects.length = 0;
+    for (let i = 0; i < els.length; i++) cardRects.push(els[i].getBoundingClientRect());
+}
+function isOnCard(x, y) {
+    for (let i = 0, len = cardRects.length; i < len; i++) {
+        const r = cardRects[i];
+        if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return true;
+    }
+    return false;
+}
 
 function rainAnimate() {
     if (!rainRunning) return;
-    rainCtx.clearRect(0, 0, rainCanvas.width, rainCanvas.height);
-    rainCtx.strokeStyle = rainCfg.color; rainCtx.lineCap = 'round'; rainCtx.lineWidth = rainCfg.dropWidth;
-    const screenBottom = rainCanvas.height;
-    drops.forEach(d => {
+    const w = rainCanvas.width, h = rainCanvas.height;
+    rainCtx.clearRect(0, 0, w, h);
+    const ctx = rainCtx;
+    const TWO_PI = Math.PI * 2;
+
+    // --- Batch draw raindrops by opacity groups ---
+    ctx.lineCap = 'round';
+    ctx.lineWidth = rainCfg.dropWidth;
+    ctx.strokeStyle = rainCfg.color;
+
+    // Group drops by rounded opacity for fewer state changes
+    const opacityGroups = new Map();
+    for (let i = 0, len = drops.length; i < len; i++) {
+        const d = drops[i];
         d.y += d.speed;
+        const dy = d.y + d.length;
         // Card splash
-        if (!d.hitCard && isOnCard(d.x, d.y + d.length)) {
+        if (!d.hitCard && isOnCard(d.x, dy)) {
             d.hitCard = true;
-            if (Math.random() > 0.7) splashes.push({ x: d.x, y: d.y + d.length, radius: 0, opacity: 0.6,
-                particles: Array.from({ length: 4 }, () => ({ angle: Math.random() * Math.PI * 2, speed: 1 + Math.random() * 2, size: 2 + Math.random() * 2, life: 1 })) });
+            if (Math.random() > 0.7) {
+                const particles = [];
+                for (let j = 0; j < 4; j++) particles.push({ angle: Math.random() * TWO_PI, speed: 1 + Math.random() * 2, size: 2 + Math.random() * 2, life: 1 });
+                splashes[splashCount++] = { x: d.x, y: dy, radius: 0, opacity: 0.6, isBottom: false, particles };
+            }
         }
-        // Bottom-of-screen splash
-        if (!d.hitBottom && d.y + d.length >= screenBottom) {
+        // Bottom splash
+        if (!d.hitBottom && dy >= h) {
             d.hitBottom = true;
             if (Math.random() > 0.4) {
-                const splashY = screenBottom - 2;
-                splashes.push({
-                    x: d.x, y: splashY, radius: 0, opacity: 0.7, isBottom: true,
-                    particles: Array.from({ length: 5 + Math.floor(Math.random() * 4) }, () => ({
-                        vx: (Math.random() - 0.5) * 4,
-                        vy: -(2 + Math.random() * 4),
-                        size: 1.5 + Math.random() * 2,
-                        life: 1,
-                        gravity: 0.15
-                    }))
-                });
+                const splashY = h - 2;
+                const pCount = 5 + ((Math.random() * 4) | 0);
+                const particles = [];
+                for (let j = 0; j < pCount; j++) particles.push({ vx: (Math.random() - 0.5) * 4, vy: -(2 + Math.random() * 4), size: 1.5 + Math.random() * 2, life: 1, gravity: 0.15 });
+                splashes[splashCount++] = { x: d.x, y: splashY, radius: 0, opacity: 0.7, isBottom: true, particles };
             }
         }
-        if (d.y > screenBottom) { d.y = -d.length; d.x = Math.random() * rainCanvas.width; d.hitCard = false; d.hitBottom = false; }
-        rainCtx.beginPath(); rainCtx.globalAlpha = d.opacity; rainCtx.moveTo(d.x, d.y); rainCtx.lineTo(d.x, d.y + d.length); rainCtx.stroke();
+        if (d.y > h) { d.y = -d.length; d.x = Math.random() * w; d.hitCard = false; d.hitBottom = false; }
+        // Group by quantized opacity
+        const oKey = (d.opacity * 10 + 0.5) | 0;
+        let grp = opacityGroups.get(oKey);
+        if (!grp) { grp = []; opacityGroups.set(oKey, grp); }
+        grp.push(d);
+    }
+    // Draw drops in batched strokes per opacity
+    opacityGroups.forEach((grp, oKey) => {
+        ctx.globalAlpha = oKey / 10;
+        ctx.beginPath();
+        for (let i = 0, len = grp.length; i < len; i++) {
+            const d = grp[i];
+            ctx.moveTo(d.x, d.y);
+            ctx.lineTo(d.x, d.y + d.length);
+        }
+        ctx.stroke();
     });
-    splashes = splashes.filter(s => {
+
+    // --- Update and draw splashes (in-place compaction, no new array) ---
+    let writeIdx = 0;
+    for (let i = 0; i < splashCount; i++) {
+        const s = splashes[i];
+        let keep = false;
         if (s.isBottom) {
-            // Bottom splash: upward particle burst
             s.opacity -= 0.025;
-            if (s.opacity <= 0) return false;
-            rainCtx.fillStyle = rainCfg.splashColor;
-            let alive = false;
-            s.particles.forEach(p => {
-                if (p.life > 0) {
-                    alive = true;
-                    p.life -= 0.035;
-                    p.vy += p.gravity;
-                    p.vx *= 0.99;
-                    const px = s.x + p.vx * (1 - p.life) * 15;
-                    const py = s.y + p.vy * (1 - p.life) * 12;
-                    rainCtx.globalAlpha = s.opacity * p.life;
-                    rainCtx.beginPath();
-                    rainCtx.arc(px, py, p.size * p.life, 0, Math.PI * 2);
-                    rainCtx.fill();
+            if (s.opacity > 0) {
+                ctx.fillStyle = rainCfg.splashColor;
+                const pts = s.particles;
+                for (let j = 0, plen = pts.length; j < plen; j++) {
+                    const p = pts[j];
+                    if (p.life > 0) {
+                        keep = true;
+                        p.life -= 0.035;
+                        p.vy += p.gravity;
+                        p.vx *= 0.99;
+                        const factor = 1 - p.life;
+                        const px = s.x + p.vx * factor * 15;
+                        const py = s.y + p.vy * factor * 12;
+                        ctx.globalAlpha = s.opacity * p.life;
+                        ctx.beginPath();
+                        ctx.arc(px, py, p.size * p.life, 0, TWO_PI);
+                        ctx.fill();
+                    }
                 }
-            });
-            // Small elliptical ring at base
-            if (s.radius < 20) {
-                s.radius += 1.5;
-                rainCtx.strokeStyle = rainCfg.splashColor;
-                rainCtx.globalAlpha = s.opacity * 0.5;
-                rainCtx.lineWidth = 1;
-                rainCtx.beginPath();
-                rainCtx.ellipse(s.x, s.y, s.radius, s.radius * 0.3, 0, 0, Math.PI * 2);
-                rainCtx.stroke();
+                if (s.radius < 20) {
+                    s.radius += 1.5;
+                    ctx.strokeStyle = rainCfg.splashColor;
+                    ctx.globalAlpha = s.opacity * 0.5;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.ellipse(s.x, s.y, s.radius, s.radius * 0.3, 0, 0, TWO_PI);
+                    ctx.stroke();
+                }
             }
-            return alive;
         } else {
-            // Card splash (original)
             s.radius += 2; s.opacity -= 0.03;
-            if (s.opacity <= 0) return false;
-            rainCtx.strokeStyle = rainCfg.splashColor; rainCtx.globalAlpha = s.opacity; rainCtx.lineWidth = 1;
-            rainCtx.beginPath(); rainCtx.arc(s.x, s.y, s.radius, 0, Math.PI * 2); rainCtx.stroke();
-            rainCtx.fillStyle = rainCfg.splashColor;
-            s.particles.forEach(p => {
-                if (p.life > 0) {
-                    p.life -= 0.05;
-                    rainCtx.globalAlpha = s.opacity * p.life; rainCtx.beginPath();
-                    rainCtx.arc(s.x + Math.cos(p.angle) * s.radius * p.speed * 0.5, s.y + Math.sin(p.angle) * s.radius * p.speed * 0.3 - s.radius * 0.5, p.size * p.life, 0, Math.PI * 2); rainCtx.fill();
+            if (s.opacity > 0) {
+                keep = true;
+                ctx.strokeStyle = rainCfg.splashColor; ctx.globalAlpha = s.opacity; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.radius, 0, TWO_PI); ctx.stroke();
+                ctx.fillStyle = rainCfg.splashColor;
+                const pts = s.particles;
+                for (let j = 0, plen = pts.length; j < plen; j++) {
+                    const p = pts[j];
+                    if (p.life > 0) {
+                        p.life -= 0.05;
+                        ctx.globalAlpha = s.opacity * p.life; ctx.beginPath();
+                        ctx.arc(s.x + Math.cos(p.angle) * s.radius * p.speed * 0.5, s.y + Math.sin(p.angle) * s.radius * p.speed * 0.3 - s.radius * 0.5, p.size * p.life, 0, TWO_PI); ctx.fill();
+                    }
                 }
-            });
-            return true;
+            }
         }
-    });
-    rainCtx.globalAlpha = 1;
+        if (keep) splashes[writeIdx++] = s;
+    }
+    splashCount = writeIdx;
+
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = rainCfg.dropWidth;
+    ctx.strokeStyle = rainCfg.color;
     rainAnimId = requestAnimationFrame(rainAnimate);
 }
 
@@ -500,10 +588,24 @@ function initRainEffect(options = {}) {
     document.body.insertBefore(rainCanvas, document.body.firstChild);
     rainCtx = rainCanvas.getContext('2d');
     rainResize();
+    // Pre-allocate splash array
+    splashes = new Array(256);
+    splashCount = 0;
     for (let i = 0; i < rainCfg.dropCount; i++) drops.push(createDrop());
     updateCardRects();
-    window.addEventListener('resize', () => { rainResize(); updateCardRects(); }, { passive: true });
-    window.addEventListener('scroll', updateCardRects, { passive: true });
+    // Throttled resize
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => { rainResize(); updateCardRects(); }, 100);
+    }, { passive: true });
+    // Throttled scroll for card rects
+    window.addEventListener('scroll', () => {
+        if (!rainScrollThrottle) {
+            rainScrollThrottle = true;
+            requestAnimationFrame(() => { updateCardRects(); rainScrollThrottle = false; });
+        }
+    }, { passive: true });
     setInterval(updateCardRects, 2000);
     document.addEventListener('visibilitychange', () => { if (document.hidden) stopRain(); else { updateCardRects(); startRain(); } }, { passive: true });
     startRain();
@@ -560,14 +662,16 @@ function initSiteWithConfig(config) {
         const nav = document.getElementById('headerLinks');
         if (nav) {
             nav.innerHTML = '';
-            config.header.links.forEach(link => {
+            const links = config.header.links;
+            for (let i = 0, len = links.length; i < len; i++) {
+                const link = links[i];
                 const a = document.createElement('a');
                 a.href = link.url;
                 a.innerHTML = link.icon ? `<i class="${link.icon}"></i> ${link.text}` : link.text;
                 if (link.onclick) a.setAttribute('onclick', link.onclick);
                 if (link.url && !link.url.startsWith('#')) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
                 nav.appendChild(a);
-            });
+            }
         }
     }
 }
@@ -577,15 +681,16 @@ function renderHomepageCards(cards) {
     if (!homepage) return;
     homepage.innerHTML = '';
     const order = window.siteConfig?.homepage?.cardOrder || [];
-    order.forEach(type => {
+    for (let oi = 0, olen = order.length; oi < olen; oi++) {
+        const type = order[oi];
         const card = cards.find(c => c.type === type);
-        if (!card) return;
+        if (!card) continue;
         const s = document.createElement('section');
         s.className = `card ${type}`;
         switch (type) {
             case 'clock':
                 s.innerHTML = '<div class="clock"><div class="clock-date"></div><div class="clock-time"></div></div><div class="hitokoto-container"></div>';
-                updateClock(); break;
+                break;
             case 'profile':
                 s.innerHTML = `<img src="${card.avatar}" alt="头像"><div class="profile-info"><h2>${card.name}</h2><p>${card.nickname}</p></div>
                     <div class="buttons">${card.buttons.map(b => `<a href="${b.url}" target="_blank" class="button ${b.type}-button"><i class="fas ${b.icon}"></i> ${b.text}</a>`).join('')}</div>`;
@@ -636,7 +741,10 @@ function renderHomepageCards(cards) {
                 break;
         }
         homepage.appendChild(s);
-    });
+    }
+    // 所有卡片已插入 DOM，刷新时钟缓存使其包含新建的主页时钟元素
+    refreshClockEls();
+    updateClock();
     const cc = cards.find(c => c.type === 'comments');
     if (cc?.settings && window.twikoo) setTimeout(() => twikoo.init({ envId: cc.settings.envId, el: '#tcomment' }), 100);
 }
@@ -648,7 +756,8 @@ function refreshBusuanzi() {
     script.setAttribute('data-prefix', 'busuanzi_value');
     document.body.appendChild(script);
     script.onload = () => setTimeout(() => {
-        ['busuanzi_value_site_pv', 'busuanzi_value_site_uv'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
+        const ids = ['busuanzi_value_site_pv', 'busuanzi_value_site_uv'];
+        for (let i = 0; i < ids.length; i++) { const el = document.getElementById(ids[i]); if (el) el.style.display = ''; }
     }, 1000);
 }
 
@@ -706,7 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setAutoSlideInterval(config.carousel.interval || 10000);
         }
         if (config.homepage?.cards) renderHomepageCards(config.homepage.cards);
-        initHitokoto();
+        initJinrishici();
         if (navData.cards) renderCards(navData.cards);
         initNavigation();
     });
