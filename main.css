@@ -666,22 +666,8 @@ html.dark-mode .search-button:hover { box-shadow: 0 4px 15px rgba(96,165,250,0.3
    ======================================== */
 
 .cardContainer { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; margin: auto; }
-.cardContainer {
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-}
 .cardItem { flex: 1; display: none; flex-direction: row; border-radius: var(--card-radius); margin-bottom: 10px; overflow: hidden; }
-.cardItem.active {
-    display: flex; width: 90%; height: 100%; margin-bottom: 0; margin-left: 2%;
-    background: transparent;
-    border: 0;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-}
+.cardItem.active { display: flex; width: 100%; height: 100%; margin-bottom: 0; }
 
 .cardItem.active .grid-container {
     display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(4, 1fr);
@@ -691,12 +677,18 @@ html.dark-mode .search-button:hover { box-shadow: 0 4px 15px rgba(96,165,250,0.3
 .cardItem.active .grid-item {
     display: flex; justify-content: flex-start; align-items: center;
     padding: 12px; text-decoration: none; color: var(--font-color); width: 100%; height: 100%;
+    background: var(--glass-background-solid);
+    backdrop-filter: blur(var(--blur-amount));
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    border: 1px solid var(--glass-border);
     border-radius: var(--card-radius-sm); transition: var(--transition-fast);
 }
 
 .cardItem.active .grid-item:hover {
     background: linear-gradient(135deg, var(--hover-bg), rgba(125,211,252,0.12));
-    box-shadow: inset 0 0 0 1px var(--glass-border);
+    border-color: var(--glass-border-strong);
+    box-shadow: var(--glass-shadow);
+    transform: translateY(-2px);
 }
 .icon { width: 22px; height: 22px; margin-right: 10px; object-fit: contain; }
 .navButtons { display: flex; justify-content: center; gap: 10px; width: 100%; margin: 28px 0 20px; }
