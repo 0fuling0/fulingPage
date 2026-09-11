@@ -1,5 +1,6 @@
 /* ===== Background Image ===== */
 const bgState = { images: [], currentIndex: 0, isTransitioning: false, timer: null, interval: 30000, apiUrls: new Set() };
+let bgVisibilityHandler;
 const preloadCache = new Set();
 let bgContainer, bottomLayer, topLayer;
 
@@ -12,9 +13,72 @@ function createLayers() {
     bottomLayer = document.createElement('div');
     bottomLayer.style.cssText = css;
     topLayer = document.createElement('div');
-    topLayer.style.cssText = css + ';transition:opacity 1.5s ease-in-out;will-change:opacity';
+    topLayer.style.cssText = css + ';transition:opacity 1.5s ease-in-out';
     bgContainer.append(bottomLayer, topLayer);
     document.body.insertBefore(bgContainer, document.body.firstChild);
+}
+
+function renderHeaderApp(config) {
+    const mount = document.getElementById('header-app');
+    if (!mount || !window.Vue) return;
+    headerApp?.unmount();
+    const links = config?.header?.links || [];
+    const app = Vue.createApp({
+        data: () => ({
+            title: config?.header?.title || config?.siteInfo?.title || 'Homepage',
+            motto: config?.siteInfo?.motto || '',
+            links,
+            section: pageState.section
+        }),
+        mounted() {
+            this.sectionHandler = event => { this.section = event.detail; };
+            document.addEventListener('sectionchange', this.sectionHandler);
+        },
+        beforeUnmount() {
+            document.removeEventListener('sectionchange', this.sectionHandler);
+        },
+        methods: {
+            navigate(link) {
+                const section = link.onclick?.match(/showSection\('([^']+)'\)/)?.[1];
+                if (section) showSection(section);
+            },
+            toggleTheme() {
+                toggleDarkMode();
+            }
+        },
+        template: `
+            <div class="header-content">
+                <div class="header-brand">
+                    <h1>{{ section === 'navpage' ? (configNavTitle || 'Navigation') : title }}</h1>
+                    <p class="motto">{{ motto }}</p>
+                </div>
+                <div class="header-nav-wrapper">
+                    <nav class="header-nav" role="navigation" aria-label="主导航">
+                        <a v-for="link in links" :key="link.text" :href="link.url"
+                            :target="link.url && !link.url.startsWith('#') ? '_blank' : undefined"
+                            :rel="link.url && !link.url.startsWith('#') ? 'noopener noreferrer' : undefined"
+                            :class="{ active: (section === 'homepage' && link.url === '#home') || (section === 'navpage' && link.url === '#nav') }"
+                            @click="navigate(link)">
+                            <i v-if="link.icon" :class="link.icon"></i> {{ link.text }}
+                        </a>
+                    </nav>
+                    <button class="header-dark-toggle" @click="toggleTheme"
+                        aria-label="切换暗色模式" title="切换暗色模式">
+                        <i class="fas" :class="isDarkMode() ? 'fa-sun' : 'fa-moon'"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="header-indicator"></div>
+        `,
+        computed: {
+            configNavTitle() {
+                return config?.header?.navTitle || 'Navigation';
+            }
+        }
+    });
+    app.config.globalProperties.isDarkMode = isDark;
+    headerApp = app;
+    app.mount(mount);
 }
 
 function isApiUrl(src) {
@@ -72,6 +136,7 @@ function stopBgAutoPlay() { if (bgState.timer) { clearInterval(bgState.timer); b
 
 function initBackgroundImage(config) {
     if (!config?.images?.length) return;
+    stopBgAutoPlay();
     bgState.images = config.images;
     bgState.interval = config.interval || 30000;
     bgState.apiUrls = new Set(config.api || []);
@@ -80,7 +145,9 @@ function initBackgroundImage(config) {
     createLayers();
     switchBg(bgState.currentIndex, false);
     startBgAutoPlay();
-    document.addEventListener('visibilitychange', () => document.hidden ? stopBgAutoPlay() : startBgAutoPlay(), { passive: true });
+    if (bgVisibilityHandler) document.removeEventListener('visibilitychange', bgVisibilityHandler);
+    bgVisibilityHandler = () => document.hidden ? stopBgAutoPlay() : startBgAutoPlay();
+    document.addEventListener('visibilitychange', bgVisibilityHandler, { passive: true });
 }
 
 /* ===== Carousel ===== */
@@ -189,7 +256,7 @@ function setAutoSlideInterval(ms) { stopCarouselAuto(); if (carouselImages.lengt
 function resetCarousel() { carouselFirstLoad = true; carouselIdx = 0; carouselTransitioning = false; setTimeout(initCarousel, 100); }
 
 /* ===== Clock & Jinrishici (今日诗词) ===== */
-let dateF, timeF, jinrishiciTimer;
+let dateF, timeF, jinrishiciTimer, clockTimer, runtimeTimer, clockVisibilityHandler;
 let clockEls = null, lastDateStr = '', lastTimeStr = '';
 
 function updateClock() {
@@ -267,12 +334,15 @@ function updateRuntimeInfo(startDate) {
 }
 
 function initClock() {
+    if (clockTimer) clearInterval(clockTimer);
+    if (clockVisibilityHandler) document.removeEventListener('visibilitychange', clockVisibilityHandler);
     updateClock();
-    let iv = setInterval(updateClock, 1000);
-    document.addEventListener('visibilitychange', () => {
-        clearInterval(iv);
-        if (!document.hidden) { updateClock(); iv = setInterval(updateClock, 1000); }
-    }, { passive: true });
+    clockTimer = setInterval(updateClock, 1000);
+    clockVisibilityHandler = () => {
+        clearInterval(clockTimer);
+        if (!document.hidden) { updateClock(); clockTimer = setInterval(updateClock, 1000); }
+    };
+    document.addEventListener('visibilitychange', clockVisibilityHandler, { passive: true });
 }
 
 function initJinrishici() {
@@ -329,9 +399,8 @@ function updateNavActive(sectionId) {
     const links = document.querySelectorAll('.header-nav a');
     for (let i = 0, len = links.length; i < len; i++) {
         const a = links[i];
-        const onclick = a.getAttribute('onclick') || '', href = a.getAttribute('href') || '';
+        const href = a.getAttribute('href') || '';
         a.classList.toggle('active',
-            onclick.includes(`'${sectionId}'`) ||
             (sectionId === 'homepage' && href.includes('#home')) ||
             (sectionId === 'navpage' && href.includes('#nav'))
         );
@@ -348,16 +417,12 @@ function initHeaderAndFooter(config) {
             if (!ticking) { requestAnimationFrame(() => { handleScroll(); ticking = false; }); ticking = true; }
         }, { passive: true });
     }
-    if (config?.siteInfo?.startDate) {
-        const start = new Date(config.siteInfo.startDate), el = document.getElementById('footer-runtime');
-        if (el) { const update = () => el.textContent = Math.floor((Date.now() - start) / 864e5); update(); setInterval(update, 36e5); }
-    }
-    const cp = document.querySelector('.footer-info .copyright');
-    if (cp && config?.footer?.copyright) cp.innerHTML = config.footer.copyright;
 }
 
 /* ===== Navigation ===== */
-let navTimer, currentCard = 1, mainEl, navHeaderH1, cardContainer;
+let navTimer, currentCard = 1, mainEl, navHeaderH1;
+const pageState = { section: 'homepage' };
+let homepageApp, navigationApp, footerApp, headerApp, loadingApp;
 
 function showCard(n) {
     const items = document.querySelectorAll('.cardItem');
@@ -368,47 +433,118 @@ function showCard(n) {
     currentCard = n;
 }
 
+function renderNavigationApp(cards) {
+    const mount = document.getElementById('navpage-app');
+    if (!mount || !window.Vue) return;
+    navigationApp?.unmount();
+    const app = Vue.createApp({
+        data: () => ({
+            cards,
+            currentCard: cards[0]?.id || '',
+            engine: localStorage.getItem('lastSelectedEngine') || 'Google',
+            searchTerm: '',
+            optionsOpen: false
+        }),
+        mounted() {
+            refreshClockEls();
+            updateClock();
+        },
+        methods: {
+            selectCard(id) {
+                this.currentCard = id;
+                currentCard = Number(id.replace('card', '')) || 1;
+            },
+            startTimer(card) {
+                startTimer(card);
+            },
+            clearTimer() {
+                clearTimer();
+            },
+            search() {
+                const term = this.searchTerm.trim();
+                const url = SEARCH_URLS[this.engine];
+                if (!term || !url) return;
+                window.open(url + encodeURIComponent(term), '_blank', 'noopener,noreferrer');
+                localStorage.setItem('lastSelectedEngine', this.engine);
+            },
+            selectEngine(engine) {
+                this.engine = engine;
+                this.optionsOpen = false;
+                localStorage.setItem('lastSelectedEngine', engine);
+            }
+        },
+        template: `
+            <section class="card navigation-card">
+                <div class="clock"></div>
+                <div class="hitokoto-container"></div><br>
+                <div class="search-container">
+                    <div class="custom-select">
+                        <button type="button" class="select-styled" aria-haspopup="listbox"
+                            :aria-expanded="optionsOpen" @click="optionsOpen = !optionsOpen">{{ engine }}</button>
+                        <div class="search-options" id="searchOptions" :class="{ 'is-open': optionsOpen }">
+                            <div v-for="(_, name) in searchUrls" :key="name" class="search-option"
+                                role="option" tabindex="0" @click="selectEngine(name)"
+                                @keydown.enter="selectEngine(name)">{{ name }}</div>
+                        </div>
+                    </div>
+                    <input v-model="searchTerm" class="search-input" placeholder="输入搜索词"
+                        @keydown.enter="search">
+                    <button type="button" class="search-button" @click="search">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                </div>
+                <div class="cardContainer">
+                    <div class="navButtons">
+                        <button v-for="card in cards" :key="card.id" type="button" class="navButton"
+                            :class="{ current: currentCard === card.id }" @click="selectCard(card.id)"
+                            @mouseenter="startTimer(Number(card.id.replace('card', '')))"
+                            @mouseleave="clearTimer">{{ card.title }}</button>
+                    </div>
+                    <div v-for="card in cards" :key="card.id" class="cardItem"
+                        :id="card.id" :class="{ active: currentCard === card.id, current: currentCard === card.id }">
+                        <div class="grid-container">
+                            <a v-for="item in card.items" :key="item.url" :href="item.url" target="_blank"
+                                rel="noopener noreferrer" class="grid-item">
+                                <img class="icon" :src="item.icon" :alt="item.name" loading="lazy">
+                                <span>{{ item.name }}</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        `,
+        computed: {
+            activeCard() {
+                return this.cards.find(card => card.id === this.currentCard) || this.cards[0];
+            },
+            searchUrls() {
+                return SEARCH_URLS;
+            }
+        }
+    });
+    navigationApp = app;
+    app.mount(mount);
+}
+
 function showSection(id) {
+    const section = id === 'navpage' ? 'navpage' : 'homepage';
+    pageState.section = section;
     const hp = document.getElementById('homepage'), np = document.getElementById('navpage');
-    if (hp) hp.style.display = id === 'homepage' ? 'block' : 'none';
-    if (np) np.style.display = id === 'navpage' ? 'block' : 'none';
+    if (hp) hp.style.display = section === 'homepage' ? 'block' : 'none';
+    if (np) np.style.display = section === 'navpage' ? 'block' : 'none';
     if (navHeaderH1) {
         const c = window.siteConfig?.header;
-        navHeaderH1.textContent = id === 'navpage' ? (c?.navTitle || 'Navigation') : (c?.title || 'Homepage');
+        navHeaderH1.textContent = section === 'navpage' ? (c?.navTitle || 'Navigation') : (c?.title || 'Homepage');
     }
-    if (mainEl) mainEl.style.columnCount = id === 'navpage' ? '1' : '';
-    updateNavActive(id);
+    if (mainEl) mainEl.style.columnCount = section === 'navpage' ? '1' : '';
+    updateNavActive(section);
+    document.dispatchEvent(new CustomEvent('sectionchange', { detail: section }));
     window.scrollTo({ top: 0 });
 }
 
 function startTimer(n) { navTimer = setTimeout(() => showCard(n), 500); }
 function clearTimer() { clearTimeout(navTimer); }
 function switchToCard(n) { clearTimeout(navTimer); showCard(n); }
-
-function renderCards(cards) {
-    const parent = cardContainer || document.querySelector('.cardContainer');
-    if (!parent) return;
-    const frag = document.createDocumentFragment();
-    for (let ci = 0, clen = cards.length; ci < clen; ci++) {
-        const card = cards[ci];
-        const el = document.createElement('div');
-        el.className = card.id === 'card1' ? 'cardItem active' : 'cardItem';
-        el.id = card.id;
-        const grid = document.createElement('div');
-        grid.className = 'grid-container';
-        const items = card.items;
-        for (let ii = 0, ilen = items.length; ii < ilen; ii++) {
-            const item = items[ii];
-            const a = document.createElement('a');
-            a.href = item.url; a.target = '_blank'; a.className = 'grid-item'; a.dataset.url = item.url;
-            a.innerHTML = `<img class="icon" src="${item.icon}" alt="" loading="lazy"><span>${item.name}</span>`;
-            grid.appendChild(a);
-        }
-        el.appendChild(grid);
-        frag.appendChild(el);
-    }
-    parent.appendChild(frag);
-}
 
 function handleHash() {
     const h = location.hash.substring(1);
@@ -418,14 +554,36 @@ function handleHash() {
 function initNavigation() {
     mainEl = document.querySelector('main');
     navHeaderH1 = document.querySelector('header h1');
-    cardContainer = document.querySelector('.cardContainer');
-    document.querySelector('.navButton[data-card="1"]')?.classList.add('current');
-    cardContainer?.addEventListener('click', e => {
-        const item = e.target.closest('.cardItem');
-        if (item) { const n = parseInt(item.id.replace('card', '')); if (!isNaN(n)) showCard(n); }
-    });
     window.addEventListener('hashchange', handleHash, { passive: true });
     handleHash();
+}
+
+function disposeVueApps() {
+    stopBgAutoPlay();
+    stopCarouselAuto();
+    if (clockTimer) { clearInterval(clockTimer); clockTimer = null; }
+    if (clockVisibilityHandler) {
+        document.removeEventListener('visibilitychange', clockVisibilityHandler);
+        clockVisibilityHandler = null;
+    }
+    if (bgVisibilityHandler) {
+        document.removeEventListener('visibilitychange', bgVisibilityHandler);
+        bgVisibilityHandler = null;
+    }
+    if (jinrishiciTimer) { clearInterval(jinrishiciTimer); jinrishiciTimer = null; }
+    if (runtimeTimer) { clearInterval(runtimeTimer); runtimeTimer = null; }
+    // Meting 2.0.1 throws from disconnectedCallback when Vue unmounts it
+    // before its internal player has finished initializing.
+    if (!document.querySelector('meting-js')) homepageApp?.unmount();
+    navigationApp?.unmount();
+    footerApp?.unmount();
+    headerApp?.unmount();
+    loadingApp?.unmount();
+    homepageApp = null;
+    navigationApp = null;
+    footerApp = null;
+    headerApp = null;
+    loadingApp = null;
 }
 
 /* ===== Rain Effect (no wave/ripple interaction) ===== */
@@ -619,134 +777,149 @@ const SEARCH_URLS = {
     Ask: 'https://www.ask.com/web?q=', AOL: 'https://search.aol.com/aol/search?q=',
     WolframAlpha: 'https://www.wolframalpha.com/input/?i=', Dogpile: 'https://www.dogpile.com/search/web?q='
 };
-let searchInput, searchStyled, searchOpts;
-
-function initSearch() {
-    searchInput = document.querySelector('.search-input');
-    searchStyled = document.querySelector('.select-styled');
-    searchOpts = document.getElementById('searchOptions');
-    const last = localStorage.getItem('lastSelectedEngine');
-    if (last && searchStyled) searchStyled.textContent = last;
-    searchInput?.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
-}
-
-function doSearch() {
-    const engine = searchStyled?.textContent, term = searchInput?.value.trim();
-    if (!term || !SEARCH_URLS[engine]) return;
-    window.open(SEARCH_URLS[engine] + encodeURIComponent(term), '_blank');
-    localStorage.setItem('lastSelectedEngine', engine);
-}
-
-function toggleSearchOptions() {
-    if (searchOpts) searchOpts.style.display = searchOpts.style.display === 'grid' ? 'none' : 'grid';
-}
-
-function selectSearchOption(opt) {
-    if (searchStyled) searchStyled.textContent = opt;
-    toggleSearchOptions();
-    localStorage.setItem('lastSelectedEngine', opt);
-}
 
 /* ===== Site Info ===== */
 function initSiteWithConfig(config) {
     if (!config) return;
     if (config.siteInfo) {
-        document.title = config.siteInfo.title || document.title;
-        document.querySelector('meta[name="description"]')?.setAttribute('content', config.siteInfo.description || '');
-        const h1 = document.querySelector('header h1');
-        if (h1) h1.textContent = config.header?.title || config.siteInfo.title;
-        const motto = document.querySelector('.motto');
-        if (motto) motto.textContent = config.siteInfo.motto || '';
-    }
-    if (config.header?.links) {
-        const nav = document.getElementById('headerLinks');
-        if (nav) {
-            nav.innerHTML = '';
-            const links = config.header.links;
-            for (let i = 0, len = links.length; i < len; i++) {
-                const link = links[i];
-                const a = document.createElement('a');
-                a.href = link.url;
-                a.innerHTML = link.icon ? `<i class="${link.icon}"></i> ${link.text}` : link.text;
-                if (link.onclick) a.setAttribute('onclick', link.onclick);
-                if (link.url && !link.url.startsWith('#')) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
-                nav.appendChild(a);
-            }
-        }
+        const title = config.siteInfo.title || document.title;
+        const description = config.siteInfo.description || '';
+        document.title = title;
+        document.querySelector('meta[name="description"]')?.setAttribute('content', description);
+        document.querySelector('meta[property="og:title"]')?.setAttribute('content', title);
+        document.querySelector('meta[property="og:description"]')?.setAttribute('content', description);
     }
 }
 
 function renderHomepageCards(cards) {
-    const homepage = document.getElementById('homepage');
-    if (!homepage) return;
-    homepage.innerHTML = '';
-    const order = window.siteConfig?.homepage?.cardOrder || [];
-    for (let oi = 0, olen = order.length; oi < olen; oi++) {
-        const type = order[oi];
-        const card = cards.find(c => c.type === type);
-        if (!card) continue;
-        const s = document.createElement('section');
-        s.className = `card ${type}`;
-        switch (type) {
-            case 'clock':
-                s.innerHTML = '<div class="clock"><div class="clock-date"></div><div class="clock-time"></div></div><div class="hitokoto-container"></div>';
-                break;
-            case 'profile':
-                s.innerHTML = `<img src="${card.avatar}" alt="头像"><div class="profile-info"><h2>${card.name}</h2><p>${card.nickname}</p></div>
-                    <div class="buttons">${card.buttons.map(b => `<a href="${b.url}" target="_blank" class="button ${b.type}-button"><i class="fas ${b.icon}"></i> ${b.text}</a>`).join('')}</div>`;
-                break;
-            case 'education':
-                s.innerHTML = `<h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br><ul><li>大学: ${card.university}</li><li>专业: ${card.major}</li><li>年份: ${card.year}</li></ul>`;
-                break;
-            case 'projects':
-                s.innerHTML = `<h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br><ul class="project-list">${card.list.map(p =>
-                    `<li class="project"><a href="${p.url}" target="_blank"><i class="${p.icon}"></i><span>${p.name}</span></a><p>${p.description}</p></li>`).join('')}</ul>`;
-                break;
-            case 'carousel':
-                s.innerHTML = `<h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br><br>
-                    <div class="carousel-card"><button class="carousel-btn prev-btn" aria-label="上一张"><i class="fas fa-chevron-left"></i></button>
-                    <button class="carousel-btn next-btn" aria-label="下一张"><i class="fas fa-chevron-right"></i></button>
-                    <div class="carousel-container"><img class="carousel-img" alt="轮播图片" style="opacity:0"></div></div>`;
-                setCarouselImages(card.images);
-                requestAnimationFrame(() => setTimeout(resetCarousel, 200));
-                break;
-            case 'music':
-                s.innerHTML = `<h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br><br><div id="aplayer"></div>`;
-                if (card.settings) {
-                    const m = document.createElement('meting-js');
-                    Object.entries(card.settings).forEach(([k, v]) => m.setAttribute(k, v));
-                    s.querySelector('#aplayer').appendChild(m);
-                }
-                break;
-            case 'comments':
-                s.innerHTML = `<h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br><div id="tcomment"></div>`;
-                break;
-            case 'contact':
-                s.innerHTML = `<h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br>
-                    <div class="contact-options"><a href="${card.links.email}"><i class="fas fa-at"></i><span>电子邮件</span><br></a>
-                    <a href="${card.links.github}" target="_blank"><i class="fab fa-github"></i><span>Github</span><br></a>
-                    <a href="${card.links.bilibili}" target="_blank"><i class="fab fa-bilibili"></i><span>Bilibili</span></a></div>`;
-                break;
-            case 'website-info':
-                s.innerHTML = `<h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br><ul>
-                    ${card.showVisits ? '<li><strong>本站总访问量：</strong><span id="busuanzi_value_site_pv">加载中...</span> 次</li><li><strong>本站总访客数：</strong><span id="busuanzi_value_site_uv">加载中...</span> 人</li>' : ''}
-                    ${card.showRuntime ? '<li id="runtime-info-container"><strong>网站运行时间：</strong>加载中...</li>' : ''}</ul>`;
-                if (card.showRuntime && window.siteConfig?.siteInfo?.startDate)
-                    requestAnimationFrame(() => updateRuntimeInfo(window.siteConfig.siteInfo.startDate));
+    const homepage = document.getElementById('homepage-app');
+    if (!homepage || !window.Vue) return;
+    homepageApp?.unmount();
+
+    const app = Vue.createApp({
+        data: () => ({ cards, order: window.siteConfig?.homepage?.cardOrder || [] }),
+        computed: {
+            orderedCards() {
+                return this.order.map(type => this.cards.find(card => card.type === type))
+                    .filter(card => card && card.enabled !== false);
+            }
+        },
+        methods: { carouselPrev, carouselNext },
+        mounted() {
+            const carousel = this.cards.find(card => card.type === 'carousel');
+            if (carousel) {
+                setCarouselImages(carousel.images);
+                setAutoSlideInterval(carousel.interval || 10000);
+            }
+            this.$nextTick(() => {
+                refreshClockEls();
+                updateClock();
+                resetCarousel();
                 refreshBusuanzi();
-                break;
-            default:
-                if (card.title) s.innerHTML = `<h3><i class="fas ${card.icon}"></i> ${card.title}</h3><br>${card.content ? `<p>${card.content}</p>` : ''}
-                    ${card.items ? `<ul>${card.items.map(i => `<li>${i.label}: ${i.value}</li>`).join('')}</ul>` : ''}`;
-                break;
-        }
-        homepage.appendChild(s);
-    }
-    // 所有卡片已插入 DOM，刷新时钟缓存使其包含新建的主页时钟元素
-    refreshClockEls();
-    updateClock();
-    const cc = cards.find(c => c.type === 'comments');
-    if (cc?.settings && window.twikoo) setTimeout(() => twikoo.init({ envId: cc.settings.envId, el: '#tcomment' }), 100);
+                const runtime = this.cards.find(card => card.type === 'website-info');
+                if (runtime?.showRuntime && window.siteConfig?.siteInfo?.startDate)
+                    updateRuntimeInfo(window.siteConfig.siteInfo.startDate);
+                const comments = this.cards.find(card => card.type === 'comments');
+                if (comments?.settings && window.twikoo)
+                    twikoo.init({ envId: comments.settings.envId, el: '#tcomment' });
+            });
+        },
+        template: `
+            <homepage-card v-for="card in orderedCards" :key="card.type" :card="card"
+                @carousel-prev="carouselPrev" @carousel-next="carouselNext"></homepage-card>
+        `
+    });
+    app.component('homepage-card', {
+        props: { card: { type: Object, required: true } },
+        emits: ['carousel-prev', 'carousel-next'],
+        template: `
+            <section class="card homepage-card" :class="card.type">
+                <template v-if="card.type === 'clock'">
+                    <div class="clock"><div class="clock-date"></div><div class="clock-time"></div></div>
+                    <div class="hitokoto-container"></div>
+                </template>
+                <template v-else-if="card.type === 'profile'">
+                    <img :src="card.avatar" alt="头像" loading="lazy">
+                    <div class="profile-info"><h2>{{ card.name }}</h2><p>{{ card.nickname }}</p></div>
+                    <div class="buttons">
+                        <external-link v-for="button in card.buttons" :key="button.type" :href="button.url"
+                            class="button" :class="button.type + '-button'">
+                            <i class="fas" :class="button.icon"></i> {{ button.text }}
+                        </external-link>
+                    </div>
+                </template>
+                <template v-else-if="card.type === 'projects'">
+                    <card-heading :card="card"></card-heading><br>
+                    <project-list :projects="card.list"></project-list>
+                </template>
+                <template v-else-if="card.type === 'education'">
+                    <card-heading :card="card"></card-heading><br>
+                    <ul><li>大学: {{ card.university }}</li><li>专业: {{ card.major }}</li><li>年份: {{ card.year }}</li></ul>
+                </template>
+                <template v-else-if="card.type === 'carousel'">
+                    <card-heading :card="card"></card-heading><br><br>
+                    <div class="carousel-card">
+                        <button class="carousel-btn prev-btn" aria-label="上一张" @click="$emit('carousel-prev')"><i class="fas fa-chevron-left"></i></button>
+                        <button class="carousel-btn next-btn" aria-label="下一张" @click="$emit('carousel-next')"><i class="fas fa-chevron-right"></i></button>
+                        <div class="carousel-container"><img class="carousel-img" alt="轮播图片" style="opacity:0"></div>
+                    </div>
+                </template>
+                <template v-else-if="card.type === 'contact'">
+                    <card-heading :card="card"></card-heading><br>
+                    <div class="contact-options">
+                        <external-link :href="card.links.email" :external="false"><i class="fas fa-at"></i><span>电子邮件</span><br></external-link>
+                        <external-link :href="card.links.github"><i class="fab fa-github"></i><span>Github</span><br></external-link>
+                        <external-link :href="card.links.bilibili"><i class="fab fa-bilibili"></i><span>Bilibili</span></external-link>
+                    </div>
+                </template>
+                <template v-else-if="card.type === 'music'">
+                    <card-heading :card="card"></card-heading><br><br>
+                    <div id="aplayer"><meting-js v-if="card.settings" v-bind="card.settings"></meting-js></div>
+                </template>
+                <template v-else-if="card.type === 'comments'">
+                    <card-heading :card="card"></card-heading><br><div id="tcomment"></div>
+                </template>
+                <template v-else-if="card.type === 'website-info'">
+                    <card-heading :card="card"></card-heading><br><ul>
+                        <li v-if="card.showVisits"><strong>本站总访问量：</strong><span id="busuanzi_value_site_pv">加载中...</span> 次</li>
+                        <li v-if="card.showVisits"><strong>本站总访客数：</strong><span id="busuanzi_value_site_uv">加载中...</span> 人</li>
+                        <li v-if="card.showRuntime" id="runtime-info-container"><strong>网站运行时间：</strong>加载中...</li>
+                    </ul>
+                </template>
+                <template v-else>
+                    <card-heading v-if="card.title" :card="card"></card-heading><br>
+                    <p v-if="card.content">{{ card.content }}</p>
+                    <item-list v-if="card.items" :items="card.items"></item-list>
+                </template>
+            </section>
+        `
+    });
+    app.component('card-heading', {
+        props: { card: { type: Object, required: true } },
+        template: '<h3><i class="fas" :class="card.icon"></i> {{ card.title }}</h3>'
+    });
+    app.component('external-link', {
+        inheritAttrs: false,
+        props: {
+            href: { type: String, required: true },
+            external: { type: Boolean, default: true }
+        },
+        template: '<a v-bind="$attrs" :href="href" :target="external ? \'_blank\' : undefined" :rel="external ? \'noopener noreferrer\' : undefined"><slot></slot></a>'
+    });
+    app.component('item-list', {
+        props: { items: { type: Array, required: true } },
+        template: '<ul><li v-for="item in items" :key="item.label">{{ item.label }}: {{ item.value }}</li></ul>'
+    });
+    app.component('project-list', {
+        props: { projects: { type: Array, required: true } },
+        template: `<ul class="project-list"><li v-for="project in projects" :key="project.url" class="project">
+            <external-link :href="project.url"><i :class="project.icon"></i><span>{{ project.name }}</span></external-link>
+            <p>{{ project.description }}</p>
+        </li></ul>`
+    });
+    app.config.compilerOptions.isCustomElement = tag => tag === 'meting-js';
+    homepageApp = app;
+    app.mount(homepage);
 }
 
 function refreshBusuanzi() {
@@ -761,53 +934,154 @@ function refreshBusuanzi() {
     }, 1000);
 }
 
-/* ===== Utils ===== */
-function handleLoading() {
-    setTimeout(() => {
-        const el = document.querySelector('.loading-container');
-        if (el) { el.classList.add('fade-out'); setTimeout(() => el.remove(), 500); }
-    }, 800);
+function renderFooterApp(config) {
+    const mount = document.getElementById('footer-app');
+    if (!mount || !window.Vue) return;
+    footerApp?.unmount();
+    const blog = config?.header?.links?.find(link => link.text === '博客')?.url || '#';
+    const app = Vue.createApp({
+        data: () => ({
+            copyright: config?.footer?.copyright || '',
+            startDate: config?.siteInfo?.startDate || '',
+            runtimeDays: 0,
+            blog
+        }),
+        mounted() {
+            this.updateRuntime();
+            runtimeTimer = setInterval(() => this.updateRuntime(), 36e5);
+        },
+        beforeUnmount() {
+            if (runtimeTimer) { clearInterval(runtimeTimer); runtimeTimer = null; }
+        },
+        methods: {
+            updateRuntime() {
+                const start = new Date(this.startDate);
+                this.runtimeDays = Number.isNaN(start.getTime()) ? 0 : Math.floor((Date.now() - start) / 864e5);
+            },
+            goTo(section) {
+                showSection(section);
+            },
+            toggleTheme() {
+                toggleDarkMode();
+            },
+            isDarkMode() {
+                return isDark();
+            },
+            scrollTop() {
+                scrollToTop();
+            }
+        },
+        template: `
+            <div class="footer-content">
+                <div class="footer-info">
+                    <p class="copyright">{{ copyright }}</p>
+                    <p class="runtime">✨ 网站已运行 <span>{{ runtimeDays }}</span> 天</p>
+                </div>
+                <div class="footer-links">
+                    <a :href="blog" aria-label="博客" target="_blank" rel="noopener noreferrer">
+                        <i class="fa-solid fa-blog"></i>
+                    </a>
+                    <a href="#home" @click.prevent="goTo('homepage')" aria-label="主页">
+                        <i class="fas fa-home"></i>
+                    </a>
+                    <a href="#nav" @click.prevent="goTo('navpage')" aria-label="导航">
+                        <i class="fas fa-compass"></i>
+                    </a>
+                    <a href="#" @click.prevent="toggleTheme" aria-label="切换暗色模式">
+                        <i class="fas" :class="isDarkMode() ? 'fa-sun' : 'fa-moon'"></i>
+                    </a>
+                    <a href="#" @click.prevent="scrollTop" aria-label="返回顶部">
+                        <i class="fas fa-arrow-up"></i>
+                    </a>
+                </div>
+            </div>
+        `
+    });
+    footerApp = app;
+    app.mount(mount);
+}
+
+/* ===== Loading Component ===== */
+function renderLoadingApp() {
+    const mount = document.getElementById('loading-app');
+    if (!mount || !window.Vue) return;
+    const app = Vue.createApp({
+        data: () => ({ active: true }),
+        mounted() {
+            this.dismissTimer = setTimeout(() => {
+                this.active = false;
+                this.removeTimer = setTimeout(() => {
+                    app.unmount();
+                    loadingApp = null;
+                }, 500);
+            }, 800);
+        },
+        beforeUnmount() {
+            clearTimeout(this.dismissTimer);
+            clearTimeout(this.removeTimer);
+        },
+        template: `
+            <div class="loading-container" :class="{ 'fade-out': !active }">
+                <div class="loading-animation">
+                    <div class="circle"></div><div class="circle"></div><div class="circle"></div>
+                    <div class="shadow"></div><div class="shadow"></div><div class="shadow"></div>
+                </div>
+            </div>
+        `
+    });
+    loadingApp = app;
+    app.mount(mount);
+}
+
+function dismissLoading() {
+    const el = document.querySelector('.loading-container');
+    if (el) el.classList.add('fade-out');
 }
 
 function loadConfigs() {
-    return Promise.all([
-        fetch('config.json').then(r => r.json()),
-        fetch('nav.json').then(r => r.json())
-    ]).catch(() => [null, null]);
+    const loadJson = url => fetch(url).then(response => {
+        if (!response.ok) throw new Error(`${url} returned ${response.status}`);
+        return response.json();
+    });
+    return Promise.all([loadJson('config.json'), loadJson('nav.json')]);
 }
 
-function initGridEvents() {
-    document.addEventListener('click', e => {
-        const item = e.target.closest('.grid-item');
-        if (item?.dataset.url) { e.preventDefault(); window.open(item.dataset.url, '_blank'); }
+function initStaticEvents() {
+    document.querySelectorAll('[data-section]').forEach(link => {
+        link.addEventListener('click', event => {
+            event.preventDefault();
+            showSection(link.dataset.section);
+        });
     });
 }
 
 /* ===== Global Bindings ===== */
 Object.assign(window, {
-    toggleOptions: toggleSearchOptions,
-    selectOption: selectSearchOption,
-    search: doSearch,
     startTimer,
     clearTimer,
     switchToCard,
     showSection,
     toggleDarkMode,
     scrollToTop,
+    disposeVueApps,
 });
 
 /* ===== Init ===== */
 initDarkMode();
+window.addEventListener('beforeunload', disposeVueApps, { once: true });
 
 document.addEventListener('DOMContentLoaded', () => {
     updateDarkModeIcons();
-    handleLoading();
+    renderLoadingApp();
     initClock();
+    initStaticEvents();
     loadConfigs().then(([config, navData]) => {
         if (!config || !navData) return;
         window.siteConfig = config;
         initSiteWithConfig(config);
         initHeaderAndFooter(config);
+        renderHeaderApp(config);
+        renderFooterApp(config);
         initBackgroundImage(config.backgroundImages);
         if (config.rainEffect?.enabled !== false) initRainEffect(config.rainEffect);
         if (config.carousel?.images) {
@@ -816,9 +1090,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (config.homepage?.cards) renderHomepageCards(config.homepage.cards);
         initJinrishici();
-        if (navData.cards) renderCards(navData.cards);
+        if (navData.cards) renderNavigationApp(navData.cards);
         initNavigation();
+    }).catch(error => {
+        console.error('Unable to load site configuration.', error);
+        dismissLoading();
     });
-    initSearch();
-    initGridEvents();
 });

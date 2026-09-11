@@ -4,16 +4,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" id="theme-color-meta" content="">
-    <meta name="description" content="">
+    <meta name="theme-color" id="theme-color-meta" content="#ffffff">
+    <meta name="description" content="Fuling Chen - 个人主页">
+    <meta name="author" content="Fuling Chen">
+    <meta name="robots" content="index, follow">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="color-scheme" content="light dark">
-    <title>loading...</title>
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Fuling Chen - 个人主页">
+    <meta property="og:description" content="Fuling Chen - 个人主页">
+    <meta property="og:locale" content="zh_CN">
+    <title>Fuling Chen - 个人主页</title>
     
     <!-- 预连接外部资源 -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://sdk.jinrishici.com" crossorigin>
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
     <link rel="dns-prefetch" href="https://gcore.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://sdk.jinrishici.com">
     
     <!-- 核心样式 -->
     <link rel="stylesheet" href="main.css">
@@ -25,124 +34,48 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css" media="print" onload="this.media='all'">
     
     <!-- 今日诗词 SDK -->
-    <script src="https://sdk.jinrishici.com/v2/browser/jinrishici.js" charset="utf-8"></script>
+    <script defer src="https://sdk.jinrishici.com/v2/browser/jinrishici.js" charset="utf-8"></script>
     
     <!-- 延迟加载的脚本 -->
+    <script defer src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/twikoo@1.6.41/dist/twikoo.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js"></script>
     
-    <!-- 暗色模式早期初始化 -->
     <script>
-        (function() {
-            const h = document.documentElement;
-            const d = localStorage.getItem('darkMode');
-            const p = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const isDark = d !== null ? d === 'true' : p;
-            h.classList.add(isDark ? 'dark-mode' : 'light');
-        })();
-        // 路径修正
-        let path = window.location.pathname;
-        if (!path.endsWith('/') && path !== '/index.html' && !path.includes('.')) {
-            window.location.href = path + '/' + window.location.hash;
+        const root = document.documentElement;
+        const savedMode = localStorage.getItem('darkMode');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.classList.add(savedMode !== null
+            ? (savedMode === 'true' ? 'dark-mode' : 'light')
+            : (prefersDark ? 'dark-mode' : 'light'));
+
+        const { pathname } = window.location;
+        if (!pathname.endsWith('/') && pathname !== '/index.html' && !pathname.includes('.')) {
+            const directoryUrl = new URL(`${pathname}/`, window.location.href);
+            directoryUrl.hash = window.location.hash;
+            directoryUrl.search = window.location.search;
+            window.location.replace(directoryUrl.href);
         }
     </script>
     <script defer src="main.js"></script>
 </head>
 
 <body>
-    <div class="loading-container">
-        <div class="loading-animation">
-            <div class="circle"></div>
-            <div class="circle"></div>
-            <div class="circle"></div>
-            <div class="shadow"></div>
-            <div class="shadow"></div>
-            <div class="shadow"></div>
-        </div>
-    </div>
-    <header>
-        <div class="header-content">
-            <div class="header-brand">
-                <h1></h1>
-                <p class="motto"></p>
-            </div>
-            <div class="header-nav-wrapper">
-                <nav id="headerLinks" class="header-nav" role="navigation" aria-label="主导航"></nav>
-                <button id="darkModeToggle" class="header-dark-toggle" onclick="toggleDarkMode()" aria-label="切换暗色模式" title="切换暗色模式">
-                    <i class="fas fa-moon"></i>
-                </button>
-            </div>
-        </div>
-        <div class="header-indicator"></div>
-    </header>
+    <div id="loading-app"></div>
+    <header id="header-app"></header>
 
     <main class="container">
-        <section id="homepage">
+        <section id="homepage" class="page-view homepage-view">
+            <div id="homepage-app"></div>
         </section>
 
-        <section id="navpage" style="display:none;">
-            <section class="card">
-                <div class="clock"></div>
-                <div class="hitokoto-container"></div><br>
-                <div class="search-container">
-                    <div class="custom-select">
-                        <div class="select-styled" onclick="toggleOptions()">Google</div>
-                        <div class="search-options" id="searchOptions">
-                            <div class="search-option" onclick="selectOption('Google')">Google</div>
-                            <div class="search-option" onclick="selectOption('Bing')">Bing</div>
-                            <div class="search-option" onclick="selectOption('Yahoo')">Yahoo</div>
-                            <div class="search-option" onclick="selectOption('DuckDuckGo')">DuckDuckGo</div>
-                            <div class="search-option" onclick="selectOption('Baidu')">Baidu</div>
-                            <div class="search-option" onclick="selectOption('Yandex')">Yandex</div>
-                            <div class="search-option" onclick="selectOption('Ask')">Ask.com</div>
-                            <div class="search-option" onclick="selectOption('AOL')">AOL</div>
-                            <div class="search-option" onclick="selectOption('WolframAlpha')">Wolfram Alpha</div>
-                            <div class="search-option" onclick="selectOption('Dogpile')">Dogpile</div>
-                        </div>
-                    </div>
-                    <input type="text" class="search-input" placeholder="输入搜索词">
-                    <button class="search-button" onclick="search()"><i
-                            class="fa-solid fa-magnifying-glass"></i> </button>
-                </div>
-
-                <div class="cardContainer">
-                    <div class="navButtons">
-                        <div class="navButton" onclick="switchToCard(1)" onmouseover="startTimer(1)" onmouseout="clearTimer()" data-card="1">影视</div>
-                        <div class="navButton" onclick="switchToCard(2)" onmouseover="startTimer(2)" onmouseout="clearTimer()" data-card="2">游戏</div>
-                        <div class="navButton" onclick="switchToCard(3)" onmouseover="startTimer(3)" onmouseout="clearTimer()" data-card="3">工具</div>
-                        <div class="navButton" onclick="switchToCard(4)" onmouseover="startTimer(4)" onmouseout="clearTimer()" data-card="4">服务</div>
-                    </div>
-                </div>
-            </section>
+        <section id="navpage" class="page-view navigation-view" style="display:none;">
+            <div id="navpage-app"></div>
         </section>
     </main>
 
-    <footer>
-        <div class="footer-content">
-            <div class="footer-info">
-                <p class="copyright"></p>
-                <p class="runtime">✨ 网站已运行 <span id="footer-runtime">0</span> 天</p>
-            </div>
-            <div class="footer-links">
-               <a href="https://www.fuling.cloudns.org/" aria-label="博客" target="_blank">
-                    <i class="fa-solid fa-blog"></i>
-                </a>               
-                <a href="#home" onclick="showSection('homepage'); return false;" aria-label="主页">
-                    <i class="fas fa-home"></i>
-                </a>
-                <a href="#nav" onclick="showSection('navpage'); return false;" aria-label="导航">
-                    <i class="fas fa-compass"></i>
-                </a>
-                <a href="#" onclick="toggleDarkMode(); return false;" aria-label="切换暗色模式">
-                    <i class="fas fa-moon" id="footerDarkIcon"></i>
-                </a>
-                <a href="#" onclick="scrollToTop(); return false;" aria-label="返回顶部">
-                    <i class="fas fa-arrow-up"></i>
-                </a>
-            </div>
-        </div>
-    </footer>
+    <footer id="footer-app"></footer>
 
 </body>
 
