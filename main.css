@@ -722,27 +722,28 @@ html.dark-mode .search-button:hover { box-shadow: 0 4px 15px var(--glow-color), 
    ======================================== */
 
 .cardContainer { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; margin: auto; }
-.cardItem { flex: 1; display: none; flex-direction: row; border-radius: var(--card-radius); margin-bottom: 10px; }
+.cardItem { flex: 1; display: none; flex-direction: row; border-radius: var(--card-radius); margin-bottom: 10px; overflow: visible; }
 .cardItem.active { display: flex; width: 100%; height: 100%; margin-bottom: 0; }
 
 .cardItem.active .grid-container {
     --nav-row-h: 48.25px;
     --nav-gap: 12px;
-    display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(4, 1fr);
+    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: repeat(4, 1fr);
     grid-auto-rows: minmax(var(--nav-row-h), auto);
     gap: var(--nav-gap); width: 100%;
-    /* 固定 4 行高度：不足 24 个也占满，超出部分滚动 */
-    height: calc(var(--nav-row-h) * 4 + var(--nav-gap) * 3);
-    overflow-y: auto;
+    /* 高度随内容自然撑开、整页滚动，不在盒内定高裁剪 */
 }
 
 .cardItem.active .grid-item {
     display: flex; justify-content: flex-start; align-items: center;
     padding: 12px; text-decoration: none; color: var(--font-color); width: 100%; height: 100%;
+    min-width: 0; overflow: hidden;
     background: var(--grid-item-bg, transparent);
     border: 1px solid var(--grid-item-border, var(--glass-border));
     border-radius: var(--card-radius-sm); transition: var(--transition-fast);
 }
+
+.cardItem.active .grid-item span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .cardItem.active .grid-item:hover {
     background: var(--grid-item-hover-bg, linear-gradient(135deg, var(--hover-bg), rgba(125,211,252,0.12)));
@@ -751,7 +752,7 @@ html.dark-mode .search-button:hover { box-shadow: 0 4px 15px var(--glow-color), 
     transform: translateY(-2px);
 }
 
-.icon { width: 22px; height: 22px; margin-right: 10px; object-fit: contain; }
+.icon { width: 22px; height: 22px; margin-right: 10px; object-fit: contain; flex-shrink: 0; }
 .navButtons { display: flex; justify-content: center; gap: 10px; width: 100%; margin: 28px 0 20px; }
 .navigation-view .navigation-card { margin-bottom: 0; }
 
@@ -890,7 +891,7 @@ html.dark-mode .el-button:hover { box-shadow: 0 4px 15px var(--glow-color), 0 2p
     .custom-select { min-width: 100px; }
     .select-styled, .search-input { padding: 10px 14px; font-size: 0.9rem; }
     .search-button { padding: 10px 16px; }
-    .cardItem.active .grid-container { grid-template-columns: repeat(4, 1fr); }
+    .cardItem.active .grid-container { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /* ========================================
@@ -962,7 +963,7 @@ html.dark-mode .el-button:hover { box-shadow: 0 4px 15px var(--glow-color), 0 2p
     .search-option { padding: 10px 12px; text-align: center; border-radius: var(--card-radius-sm); background: rgba(0,0,0,0.03); font-size: 0.85rem; }
     html.dark-mode .search-option { background: rgba(255,255,255,0.05); }
     .search-option:active { transform: scale(0.96); }
-    .cardItem.active .grid-container { grid-template-columns: repeat(3, 1fr); --nav-row-h: 58px; --nav-gap: 8px; }
+    .cardItem.active .grid-container { grid-template-columns: repeat(3, minmax(0, 1fr)); --nav-row-h: 58px; --nav-gap: 8px; }
     .grid-item { padding: 12px 8px; }
     .grid-item span { font-size: 0.78rem; }
 }

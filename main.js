@@ -333,7 +333,10 @@ let dateF, timeF, jinrishiciTimer, clockTimer, runtimeTimer, clockVisibilityHand
 let clockEls = null, lastDateStr = '', lastTimeStr = '';
 
 function updateClock() {
-    if (!clockEls) clockEls = [...document.querySelectorAll('.clock')].map(el => ({ el, dateEl: null, timeEl: null }));
+    // 注意：只选 div.clock —— clock 卡片的 <section> 自身也带 clock 类型类名，
+    // 若用 '.clock' 会把 section 一起选中，innerHTML 初始化就会清空 section 的
+    // 所有 children（含里面的 .clock div 与 .hitokoto-container），导致诗词行消失。
+    if (!clockEls) clockEls = [...document.querySelectorAll('div.clock')].map(el => ({ el, dateEl: null, timeEl: null }));
     if (!clockEls.length) return;
     if (!dateF) {
         dateF = new Intl.DateTimeFormat('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -564,21 +567,29 @@ function initHeaderAndFooter(config) {
 /* ===== Navigation ===== */
 let navTimer, currentCard = 1, mainEl, navHeaderH1;
 const pageState = { section: 'homepage' };
-let homepageApp, navigationApp, footerApp, headerApp, loadingApp;
+let homepageApp, navigationApp, navigationView, footerApp, headerApp, loadingApp;
 
 function showCard(n) {
+    const id = `card${n}`;
+    currentCard = n;
+    // 以 Vue 响应式状态为唯一真相源：按钮 .current 与面板 .active/.current 由模板 :class 驱动。
+    // 悬停路径原来直接改 DOM：一是模板按钮根本没有 data-card 属性（query 永远落空，按钮高亮不变）；
+    // 二是改完的类名会在下次 Vue 渲染时被按旧 currentCard 覆盖回去，造成“切过去了但没激活”。
+    if (navigationView) { navigationView.currentCard = id; return; }
+    // 降级路径（无 Vue 时）：直接操作 DOM
     const items = document.querySelectorAll('.cardItem');
     for (let i = 0, len = items.length; i < len; i++) items[i].classList.remove('active', 'current');
-    document.getElementById(`card${n}`)?.classList.add('active', 'current');
-    document.querySelector(`.navButton[data-card="${currentCard}"]`)?.classList.remove('current');
-    document.querySelector(`.navButton[data-card="${n}"]`)?.classList.add('current');
-    currentCard = n;
+    document.getElementById(id)?.classList.add('active', 'current');
+    const buttons = document.querySelectorAll('.navButton');
+    for (let i = 0, len = buttons.length; i < len; i++)
+        buttons[i].classList.toggle('current', buttons[i].dataset.card == n);
 }
 
 function renderNavigationApp(cards) {
     const mount = document.getElementById('navpage-app');
     if (!mount || !window.Vue) return;
     navigationApp?.unmount();
+    navigationView = null;
     const app = Vue.createApp({
         data: () => ({
             cards,
@@ -662,7 +673,7 @@ function renderNavigationApp(cards) {
         }
     });
     navigationApp = app;
-    app.mount(mount);
+    navigationView = app.mount(mount);
 }
 
 function showSection(id) {
@@ -719,6 +730,7 @@ function disposeVueApps() {
     loadingApp?.unmount();
     homepageApp = null;
     navigationApp = null;
+    navigationView = null;
     footerApp = null;
     headerApp = null;
     loadingApp = null;
@@ -881,7 +893,7 @@ function initRainEffect(options = {}) {
     if (rainCanvas) return; // 已初始化过，仅更新配置
     rainCanvas = document.createElement('canvas');
     rainCanvas.id = 'rain-canvas';
-    rainCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1';
+    rainCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1000';
     document.body.insertBefore(rainCanvas, document.body.firstChild);
     rainCtx = rainCanvas.getContext('2d');
     rainResize();
@@ -958,7 +970,7 @@ function initAnimation() {
 }
 
 /* ===== Code Rain（复用雨滴逻辑：等宽竖列字符匀速下落） ===== */
-const CODE_CHARS = 'アイウエオカキクケコサシスセソ01ABCDEF$#*+-=<>';
+const CODE_CHARS = '01ABCDEFabcdef<>{}[]()$#*+-=;:|&%@?';
 let codeCanvas, codeCtx, codeDrops = [], codeAnimId, codeRunning = false;
 let codeVisHandler = null, codeThemeHandler = null;
 const codeCfg = {
@@ -998,7 +1010,7 @@ function createCodeCanvas() {
     if (codeCanvas) return;
     codeCanvas = document.createElement('canvas');
     codeCanvas.id = 'code-canvas';
-    codeCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1';
+    codeCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1000';
     document.body.insertBefore(codeCanvas, document.body.firstChild);
     codeCtx = codeCanvas.getContext('2d');
     codeResize();
