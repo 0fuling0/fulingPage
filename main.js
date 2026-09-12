@@ -940,7 +940,7 @@ function createCodeDrop(initial) {
     return {
         x: Math.random() * w,
         y: initial ? Math.random() * h - h : -chars.length * codeCfg.fontSize,
-        speed: codeCfg.dropSpeed + Math.random() * 5,
+        speed: (codeCfg.dropSpeed + Math.random() * 5) * (2 / 3),
         opacity: 0.35 + Math.random() * 0.45,
         chars
     };
