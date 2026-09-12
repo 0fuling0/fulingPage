@@ -96,6 +96,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
     outline-offset: 3px;
 }
 
+::selection {
+    background: var(--primary-color);
+    color: #fff;
+}
+
 @font-face {
     font-family: 'LXGWWenKaiGBScreen';
     src: local('LXGWWenKaiGBScreen'), url('https://gcore.jsdelivr.net/gh/0fuling0/mysource@main/fonts/LXGWWenKaiGBScreen.woff2') format('woff2');

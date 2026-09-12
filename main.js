@@ -227,7 +227,7 @@ async function switchBg(index, animate = true, attempted = new Set()) {
         void topLayer.offsetHeight;
         topLayer.style.transition = 'opacity 0.8s ease-in-out, transform 9s linear';
         topLayer.style.opacity = '1';
-        requestAnimationFrame(() => { topLayer.style.transform = 'scale(1.05)'; });
+        requestAnimationFrame(() => { topLayer.style.transform = 'scale(1.05)'; }); // Ken Burns 缓推
     }
     bgState.currentIndex = index;
     bgState.isTransitioning = false;
@@ -471,6 +471,10 @@ const THEME = { dark: 'rgba(38,38,38,0.25)', light: 'rgba(255,255,255,0.4)' };
 let headerEl, lastScrollY = 0;
 
 function isDark() { return document.documentElement.classList.contains('dark-mode'); }
+
+function prefersReducedMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
 
 function setTheme(dark) {
     const h = document.documentElement;
@@ -772,7 +776,7 @@ function disposeVueApps() {
 }
 
 /* ===== Rain Effect (no wave/ripple interaction) ===== */
-let rainCanvas, rainCtx, drops = [], splashes = [], splashCount = 0, rainAnimId, rainRunning = false;
+let rainCanvas, rainCtx, drops = [], splashes = [], splashCount = 0, rainAnimId, rainRunning = false, rainLast = 0;
 const rainCfg = {
     dropCount: 80, dropSpeed: 8, dropLength: 35, dropWidth: 2.5,
     color: 'rgba(174, 194, 224, 0.5)',
@@ -785,8 +789,12 @@ function createDrop() {
         speed: rainCfg.dropSpeed + Math.random() * 5, length: rainCfg.dropLength + Math.random() * 10, opacity: 0.3 + Math.random() * 0.4,
         hitBottom: false };
 }
-function rainAnimate() {
+function rainAnimate(ts) {
     if (!rainRunning) return;
+    const now = ts || performance.now();
+    const dt = rainLast ? Math.min((now - rainLast) / 16.7, 3) : 1; // 帧间隔补偿（以 60fps 为基准）
+    rainLast = now;
+    if (dt < 0.5) { rainAnimId = requestAnimationFrame(rainAnimate); return; } // 限 ~30fps，画布工作量减半
     const w = rainCanvas.width, h = rainCanvas.height;
     rainCtx.clearRect(0, 0, w, h);
     const ctx = rainCtx;
@@ -801,7 +809,7 @@ function rainAnimate() {
     const opacityGroups = new Map();
     for (let i = 0, len = drops.length; i < len; i++) {
         const d = drops[i];
-        d.y += d.speed;
+        d.y += d.speed * dt;
         const dy = d.y + d.length;
         // 溅落只在当前窗口底部出现
         if (!d.hitBottom && dy >= h) {
@@ -838,7 +846,7 @@ function rainAnimate() {
     for (let i = 0; i < splashCount; i++) {
         const s = splashes[i];
         let keep = false;
-        s.opacity -= 0.025;
+        s.opacity -= 0.025 * dt;
         if (s.opacity > 0) {
             ctx.fillStyle = rainCfg.splashColor;
             const pts = s.particles;
@@ -846,8 +854,8 @@ function rainAnimate() {
                 const p = pts[j];
                 if (p.life > 0) {
                     keep = true;
-                    p.life -= 0.035;
-                    p.vy += p.gravity;
+                    p.life -= 0.035 * dt;
+                    p.vy += p.gravity * dt;
                     p.vx *= 0.99;
                     const factor = 1 - p.life;
                     const px = s.x + p.vx * factor * 15;
@@ -859,7 +867,7 @@ function rainAnimate() {
                 }
             }
             if (s.radius < 20) {
-                s.radius += 1.5;
+                s.radius += 1.5 * dt;
                 ctx.strokeStyle = rainCfg.splashColor;
                 ctx.globalAlpha = s.opacity * 0.5;
                 ctx.lineWidth = 1;
@@ -878,7 +886,7 @@ function rainAnimate() {
     rainAnimId = requestAnimationFrame(rainAnimate);
 }
 
-function startRain() { if (!rainRunning) { rainRunning = true; rainAnimate(); } }
+function startRain() { if (!rainRunning) { rainRunning = true; rainLast = 0; rainAnimate(); } }
 function stopRain() { rainRunning = false; if (rainAnimId) { cancelAnimationFrame(rainAnimId); rainAnimId = null; } }
 
 function initRainEffect(options = {}) {
@@ -900,7 +908,7 @@ function initRainEffect(options = {}) {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(rainResize, 100);
     }, { passive: true });
-    document.addEventListener('visibilitychange', () => { if (document.hidden) stopRain(); else if (currentAnim === 'rain') startRain(); }, { passive: true });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stopRain(); else if (currentAnim === 'rain' && !prefersReducedMotion()) startRain(); }, { passive: true });
     startRain();
 }
 
@@ -931,7 +939,7 @@ function applyAnimation(id, persist = true) {
         stopCodeRain();
         initRainEffect(window.siteConfig?.rainEffect || {});
         rainCanvas.style.display = '';
-        startRain();
+        if (!prefersReducedMotion()) startRain();
     } else if (anim.id === 'code') {
         stopRain();
         if (rainCanvas) { rainCanvas.style.display = 'none'; if (rainCtx) rainCtx.clearRect(0, 0, rainCanvas.width, rainCanvas.height); }
@@ -1007,6 +1015,7 @@ function createCodeCanvas() {
         if (document.hidden) {
             if (codeAnimId) { cancelAnimationFrame(codeAnimId); codeAnimId = null; }
         } else if (currentAnim === 'code' && codeRunning && !codeAnimId) {
+            codeLast = 0;
             codeAnimId = requestAnimationFrame(codeAnimate);
         }
     };
@@ -1017,8 +1026,13 @@ function createCodeCanvas() {
     document.addEventListener('darkmodechange', codeThemeHandler);
 }
 
-function codeAnimate() {
+let codeLast = 0;
+function codeAnimate(ts) {
     if (!codeRunning) return;
+    const now = ts || performance.now();
+    const dt = codeLast ? Math.min((now - codeLast) / 16.7, 3) : 1; // 帧间隔补偿（以 60fps 为基准）
+    codeLast = now;
+    if (dt < 0.5) { codeAnimId = requestAnimationFrame(codeAnimate); return; } // 限 ~30fps，绘制量减半
     const w = codeCanvas.width, h = codeCanvas.height;
     codeCtx.clearRect(0, 0, w, h);
     const ctx = codeCtx, fs = codeCfg.fontSize;
@@ -1026,7 +1040,7 @@ function codeAnimate() {
     ctx.textBaseline = 'top';
     for (let i = 0, len = codeDrops.length; i < len; i++) {
         const d = codeDrops[i];
-        d.y += d.speed;
+        d.y += d.speed * dt;
         // 落出屏幕后回到顶部（同雨滴重置逻辑）
         if (d.y - d.chars.length * fs > h) Object.assign(d, createCodeDrop(false));
         // 头部换新字符，尾迹偶尔闪烁其一
