@@ -40,11 +40,13 @@
     "backgroundImages": {
         "images": [
             "img/ComfyUI_00122_.webp",
+            "https://bz.w3h5.com/img/rand",
             "https://api.xsot.cn/bing?jump=true",
             "https://www.dmoe.cc/random.php",
             "https://t.mwm.moe/fj"
         ],
         "api": [
+            "https://bz.w3h5.com/img/rand",
             "https://api.xsot.cn/bing?jump=true",
             "https://www.dmoe.cc/random.php",
             "https://t.mwm.moe/fj"

@@ -182,12 +182,30 @@ function preloadImage(src) {
     });
 }
 
-async function switchBg(index, animate = true) {
+function preloadWithTimeout(src, ms = 8000) {
+    // 壁纸源加载超时：8 秒内未完成视为失败，触发多源故障转移
+    return Promise.race([preloadImage(src), new Promise(res => setTimeout(() => res(false), ms))]);
+}
+
+async function switchBg(index, animate = true, attempted = new Set()) {
     if (bgState.isTransitioning || !bgState.images.length) return;
+    if (attempted.size >= bgState.images.length) return; // 所有源都失败，保持当前背景
+    index = ((index % bgState.images.length) + bgState.images.length) % bgState.images.length;
+    if (attempted.has(index)) {
+        for (let i = 1; i < bgState.images.length; i++) {
+            const cand = (index + i) % bgState.images.length;
+            if (!attempted.has(cand)) return switchBg(cand, animate, attempted);
+        }
+        return;
+    }
     const src = bgState.images[index];
-    if (!src) return;
+    attempted.add(index);
     bgState.isTransitioning = true;
-    if (!(await preloadImage(src))) { bgState.isTransitioning = false; return; }
+    if (!(await preloadWithTimeout(src))) {
+        // 当前源失败（下载失败或超时），自动故障转移到下一张
+        bgState.isTransitioning = false;
+        return switchBg(index + 1, animate, attempted);
+    }
     // 复用预加载时的地址，杜绝展示阶段的二次下载
     const displayUrl = bgState.displayUrls[src] || (isApiUrl(src) ? getCacheBustedUrl(src) : src);
     if (animate) {
@@ -1100,7 +1118,7 @@ function renderHomepageCards(cards) {
                 setAutoSlideInterval(carousel.interval || 10000);
             }
             this.$nextTick(() => {
-                document.body.classList.add('app-ready');
+                markAppReady();
                 refreshClockEls();
                 updateClock();
                 resetCarousel();
@@ -1299,21 +1317,34 @@ function renderFooterApp(config) {
 }
 
 /* ===== Loading Component ===== */
+/* 加载动画持续到内容就绪（app-ready 事件）为止，4 秒兜底强制淡出 */
+function markAppReady() {
+    document.body.classList.add('app-ready');
+    document.dispatchEvent(new CustomEvent('app-ready'));
+}
+
 function renderLoadingApp() {
     const mount = document.getElementById('loading-app');
     if (!mount || !window.Vue) return;
     const app = Vue.createApp({
-        data: () => ({ active: true }),
-        mounted() {
-            this.dismissTimer = setTimeout(() => {
+        data: () => ({ active: true, done: false }),
+        methods: {
+            dismiss() {
+                if (this.done) return;
+                this.done = true;
                 this.active = false;
                 this.removeTimer = setTimeout(() => {
                     app.unmount();
                     loadingApp = null;
                 }, 500);
-            }, 800);
+            }
+        },
+        mounted() {
+            document.addEventListener('app-ready', this.dismiss, { once: true });
+            this.dismissTimer = setTimeout(() => this.dismiss(), 4000); // 兜底：资源异常时不永久遮挡
         },
         beforeUnmount() {
+            document.removeEventListener('app-ready', this.dismiss);
             clearTimeout(this.dismissTimer);
             clearTimeout(this.removeTimer);
         },
@@ -1488,7 +1519,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initNavigation();
     }).catch(error => {
         console.error('Unable to load site configuration.', error);
-        document.body.classList.add('app-ready');
+        markAppReady();
         dismissLoading();
     });
 });
