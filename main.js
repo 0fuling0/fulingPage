@@ -1,19 +1,21 @@
 /* ===== Background Image ===== */
-const bgState = { images: [], currentIndex: 0, isTransitioning: false, timer: null, interval: 30000, apiUrls: new Set() };
+const bgState = { images: [], currentIndex: 0, isTransitioning: false, timer: null, interval: 30000, apiUrls: new Set(), displayUrls: {} };
 let bgVisibilityHandler;
 const preloadCache = new Set();
+const BG_FADE_MS = 800;
 let bgContainer, bottomLayer, topLayer;
 
 function createLayers() {
     if (bgContainer) return;
     bgContainer = document.createElement('div');
     bgContainer.id = 'bg-container';
-    bgContainer.style.cssText = 'position:fixed;inset:0;z-index:-10;overflow:hidden;pointer-events:none;background:#1a1a2e;transition:filter 0.6s ease,transform 0.6s ease';
-    const css = 'position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:1';
+    bgContainer.style.cssText = 'position:fixed;inset:0;z-index:-10;overflow:hidden;pointer-events:none;background:#1a1a2e';
+    // will-change + translateZ 将图层提升到合成器，淡入淡出不再走主线程重绘
+    const css = 'position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:1;will-change:opacity,transform;transform:translateZ(0);contain:layout paint style';
     bottomLayer = document.createElement('div');
     bottomLayer.style.cssText = css;
     topLayer = document.createElement('div');
-    topLayer.style.cssText = css + ';transition:opacity 1.5s ease-in-out';
+    topLayer.style.cssText = css + ';transition:opacity 0.8s ease-in-out, transform 9s linear';
     bgContainer.append(bottomLayer, topLayer);
     document.body.insertBefore(bgContainer, document.body.firstChild);
 }
@@ -167,7 +169,14 @@ function preloadImage(src) {
         const img = new Image();
         img.decoding = 'async';
         if ('fetchPriority' in img) img.fetchPriority = 'low'; // 背景图不与关键资源抢占带宽
-        img.onload = () => { if (!isApiUrl(src)) preloadCache.add(src); res(true); };
+        img.onload = () => {
+            if (!isApiUrl(src)) preloadCache.add(src);
+            // 记录预加载实际使用的地址（API 图带时间戳），展示时复用同一地址避免二次下载
+            bgState.displayUrls[src] = loadUrl;
+            // 提前异步解码，消除大图首次绘制时的主线程解码卡顿
+            const done = () => res(true);
+            if (img.decode) img.decode().then(done, done); else done();
+        };
         img.onerror = () => res(false);
         img.src = loadUrl;
     });
@@ -179,27 +188,35 @@ async function switchBg(index, animate = true) {
     if (!src) return;
     bgState.isTransitioning = true;
     if (!(await preloadImage(src))) { bgState.isTransitioning = false; return; }
-    const displayUrl = isApiUrl(src) ? getCacheBustedUrl(src) : src;
+    // 复用预加载时的地址，杜绝展示阶段的二次下载
+    const displayUrl = bgState.displayUrls[src] || (isApiUrl(src) ? getCacheBustedUrl(src) : src);
     if (animate) {
         bottomLayer.style.backgroundImage = `url('${displayUrl}')`;
         void bottomLayer.offsetHeight;
-        topLayer.style.opacity = '0';
-        await new Promise(r => setTimeout(r, 1600));
+        topLayer.style.opacity = '0'; // 旧图淡出，露出底部新图
+        await new Promise(r => setTimeout(r, BG_FADE_MS + 100));
         topLayer.style.transition = 'none';
         topLayer.style.backgroundImage = `url('${displayUrl}')`;
-        topLayer.style.opacity = '1';
+        topLayer.style.transform = 'scale(1)';
         void topLayer.offsetHeight;
-        topLayer.style.transition = 'opacity 1.5s ease-in-out';
+        topLayer.style.transition = 'opacity 0.8s ease-in-out, transform 9s linear';
+        topLayer.style.opacity = '1';
+        requestAnimationFrame(() => { topLayer.style.transform = 'scale(1.05)'; }); // Ken Burns 缓推
     } else {
         topLayer.style.transition = 'none';
-        topLayer.style.backgroundImage = bottomLayer.style.backgroundImage = `url('${displayUrl}')`;
-        topLayer.style.opacity = '1';
+        topLayer.style.backgroundImage = `url('${displayUrl}')`;
+        topLayer.style.transform = 'scale(1)';
         void topLayer.offsetHeight;
-        topLayer.style.transition = 'opacity 1.5s ease-in-out';
+        topLayer.style.transition = 'opacity 0.8s ease-in-out, transform 9s linear';
+        topLayer.style.opacity = '1';
+        requestAnimationFrame(() => { topLayer.style.transform = 'scale(1.05)'; });
     }
     bgState.currentIndex = index;
     bgState.isTransitioning = false;
-    preloadImage(bgState.images[(index + 1) % bgState.images.length]);
+    // 空闲时段再预加载下一张，避免与关键资源抢占带宽
+    const nextSrc = bgState.images[(index + 1) % bgState.images.length];
+    const idle = window.requestIdleCallback || (cb => setTimeout(cb, 200));
+    idle(() => preloadImage(nextSrc));
     try { localStorage.setItem('bgIndex', index); } catch {}
 }
 
@@ -1083,6 +1100,7 @@ function renderHomepageCards(cards) {
                 setAutoSlideInterval(carousel.interval || 10000);
             }
             this.$nextTick(() => {
+                document.body.classList.add('app-ready');
                 refreshClockEls();
                 updateClock();
                 resetCarousel();
@@ -1092,7 +1110,12 @@ function renderHomepageCards(cards) {
                     updateRuntimeInfo(window.siteConfig.siteInfo.startDate);
                 const comments = this.cards.find(card => card.type === 'comments');
                 if (comments?.settings) {
-                    const init = () => { if (window.twikoo) twikoo.init({ envId: comments.settings.envId, el: '#tcomment' }); };
+                    const init = () => {
+                        if (!window.twikoo) return;
+                        twikoo.init({ envId: comments.settings.envId, el: '#tcomment' });
+                        patchTwikooA11y();
+                        observeTwikooA11y();
+                    };
                     (twikooReady || Promise.resolve()).then(init, init);
                 }
             });
@@ -1197,7 +1220,7 @@ function renderHomepageCards(cards) {
 
 function refreshBusuanzi() {
     const script = document.createElement('script');
-    script.src = 'https://npm.onmicrosoft.cn/penndu@16.0.0/bsz.js';
+    script.src = 'https://cdn.jsdelivr.net/npm/penndu@16.0.0/bsz.js'; // jsdelivr 域名证书有效，避免控制台证书错误
     script.defer = true;
     script.setAttribute('data-prefix', 'busuanzi_value');
     document.body.appendChild(script);
@@ -1319,7 +1342,7 @@ const LAZY_LIBS = {
     aplayer: 'https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js',
     meting: 'https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js'
 };
-let twikooReady = null;
+let twikooReady = null, playerReady = null;
 
 function loadScript(src) {
     return new Promise((resolve, reject) => {
@@ -1350,11 +1373,60 @@ function initLazyThirdParty(config) {
     }
     if (enabled('music')) {
         // APlayer 样式 → APlayer → Meting 顺序加载；Meting 定义自定义元素后会自动升级页面中已有的 <meting-js>
-        loadStylesheet(LAZY_LIBS.aplayerCss)
+        playerReady = loadStylesheet(LAZY_LIBS.aplayerCss)
             .then(() => loadScript(LAZY_LIBS.aplayer))
             .then(() => loadScript(LAZY_LIBS.meting))
             .catch(() => {});
+        playerReady.then(() => { patchAplayerA11y(); observeAplayerA11y(); });
     }
+}
+
+/* Twikoo 渲染的输入框与图标链接缺少可访问名，补齐以满足无障碍审计；
+   Twikoo 会整体替换挂载点且状态更新时重渲染，故挂在稳定的评论卡片上，
+   用 MutationObserver 在变化后重新补齐 */
+let twikooA11yTimer = null;
+
+function patchTwikooA11y() {
+    const box = document.querySelector('.card.comments') || document.getElementById('tcomment');
+    if (!box) return;
+    box.querySelector('.el-textarea__inner')?.setAttribute('aria-label', '评论输入框');
+    box.querySelector('.tk-input input')?.setAttribute('aria-label', '输入昵称或邮箱');
+    // tk-submit-action-icon 是可点击的 div（generic 角色禁止 aria-label），升级为 button 语义
+    box.querySelectorAll('.tk-submit-action-icon').forEach(a => {
+        a.setAttribute('role', 'button');
+        a.setAttribute('tabindex', '0');
+        a.setAttribute('aria-label', a.getAttribute('alt') || '插入评论附件');
+    });
+    box.querySelectorAll('.tk-action-link').forEach((a, i) => {
+        a.setAttribute('aria-label', '插入表情或图片 ' + (i + 1));
+    });
+}
+
+function observeTwikooA11y() {
+    const card = document.querySelector('.card.comments');
+    if (!card || twikooA11yTimer) return;
+    const obs = new MutationObserver(() => {
+        clearTimeout(twikooA11yTimer);
+        twikooA11yTimer = setTimeout(patchTwikooA11y, 300);
+    });
+    obs.observe(card, { childList: true, subtree: true });
+}
+
+/* APlayer 内部按钮缺少可访问名且目标偏小，补齐以满足无障碍审计 */
+function patchAplayerA11y() {
+    const box = document.getElementById('aplayer');
+    if (!box || !box.querySelector('button')) return;
+    const names = [['loop', '循环播放'], ['menu', '播放列表'], ['down', '减小音量'], ['up', '增大音量']];
+    box.querySelectorAll('button').forEach(b => {
+        const hit = names.find(([k]) => b.className.includes(k));
+        b.setAttribute('aria-label', hit ? hit[1] : '播放器控制');
+    });
+}
+
+function observeAplayerA11y() {
+    const box = document.getElementById('aplayer');
+    if (!box) return;
+    new MutationObserver(() => patchAplayerA11y()).observe(box, { childList: true, subtree: true });
 }
 
 function loadConfigs() {
@@ -1416,6 +1488,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initNavigation();
     }).catch(error => {
         console.error('Unable to load site configuration.', error);
+        document.body.classList.add('app-ready');
         dismissLoading();
     });
 });

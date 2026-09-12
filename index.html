@@ -25,7 +25,7 @@
     <link rel="dns-prefetch" href="https://sdk.jinrishici.com">
     
     <!-- 核心样式 -->
-    <link rel="stylesheet" href="main.css?v=20260912b">
+    <link rel="stylesheet" href="main.css?v=20260912h">
     <link rel="icon" type="image/webp" sizes="64x64"
         href="https://gcore.jsdelivr.net/gh/0fuling0/mysource@main/img/favicon.webp">
     
@@ -36,6 +36,9 @@
     <link rel="dns-prefetch" href="https://npm.onmicrosoft.cn">
     <link rel="preload" href="config.json" as="fetch">
     <link rel="preload" href="nav.json" as="fetch">
+    <link rel="preload" href="https://gcore.jsdelivr.net/gh/0fuling0/mysource@main/fonts/LXGWWenKaiGBScreen.woff2" as="font" type="font/woff2" crossorigin>
+    <!-- 首张背景图预加载：与 config.json backgroundImages.images[0] 保持一致（本地图片保证 LCP 快速且稳定） -->
+    <link rel="preload" href="img/ComfyUI_00122_.webp" as="image" fetchpriority="high">
 
     <!-- 今日诗词 SDK -->
     <script defer src="https://sdk.jinrishici.com/v2/browser/jinrishici.js" charset="utf-8"></script>
@@ -62,12 +65,37 @@
             window.location.replace(directoryUrl.href);
         }
     </script>
-    <script defer src="main.js?v=20260912b"></script>
+    <script defer src="main.js?v=20260912e"></script>
 </head>
 
 <body>
     <div id="loading-app"></div>
-    <header id="header-app"></header>
+    <!-- 静态 header/footer：与 Vue 模板同构，避免异步挂载时内容推移（Vue 挂载后原位替换） -->
+    <header id="header-app">
+        <div class="header-content">
+            <div class="header-brand">
+                <h1>FULING'S HOMEPAGE</h1>
+                <p class="motto">休言万事转头空，未转头时皆梦。</p>
+            </div>
+            <div class="header-nav-wrapper">
+                <nav class="header-nav" role="navigation" aria-label="主导航">
+                    <a href="https://www.fuling.cloudns.org/" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-blog"></i> 博客</a>
+                    <a href="#home" class="active"><i class="fa-solid fa-house"></i> 主页</a>
+                    <a href="#nav"><i class="fa-solid fa-compass"></i> 导航</a>
+                </nav>
+                <button class="header-dark-toggle" aria-label="切换暗色模式" title="切换暗色模式">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <div class="theme-menu">
+                    <button class="header-dark-toggle" aria-label="主题与背景滤镜" title="主题与背景滤镜">
+                        <i class="fas fa-palette"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="header-indicator"></div>
+        <script>if (document.documentElement.classList.contains('dark-mode')) { var __hi = document.querySelector('#header-app .header-dark-toggle i'); if (__hi) __hi.className = 'fas fa-sun'; }</script>
+    </header>
 
     <main class="container">
         <section id="homepage" class="page-view homepage-view">
@@ -79,7 +107,32 @@
         </section>
     </main>
 
-    <footer id="footer-app"></footer>
+    <footer id="footer-app">
+        <div class="footer-content">
+            <div class="footer-info">
+                <p class="copyright">© 2024 Fuling Chen. All rights reserved.</p>
+                <p class="runtime">✨ 网站已运行 <span>…</span> 天</p>
+            </div>
+            <div class="footer-links">
+                <a href="https://www.fuling.cloudns.org/" aria-label="博客" target="_blank" rel="noopener noreferrer">
+                    <i class="fa-solid fa-blog"></i>
+                </a>
+                <a href="#home" aria-label="主页">
+                    <i class="fas fa-home"></i>
+                </a>
+                <a href="#nav" aria-label="导航">
+                    <i class="fas fa-compass"></i>
+                </a>
+                <button type="button" aria-label="切换暗色模式">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button type="button" aria-label="返回顶部">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+            </div>
+        </div>
+        <script>if (document.documentElement.classList.contains('dark-mode')) { var __fi = document.querySelector('#footer-app .footer-links button i'); if (__fi) __fi.className = 'fas fa-sun'; }</script>
+    </footer>
 
 </body>
 
