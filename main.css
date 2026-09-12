@@ -722,17 +722,23 @@ html.dark-mode .search-button:hover { box-shadow: 0 4px 15px var(--glow-color), 
    ======================================== */
 
 .cardContainer { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; margin: auto; }
-.cardItem { flex: 1; display: none; flex-direction: row; border-radius: var(--card-radius); margin-bottom: 10px; overflow: visible; }
-.cardItem.active { display: flex; width: 100%; height: 100%; margin-bottom: 0; }
-
-.cardItem.active .grid-container {
+.cardItem {
     --nav-row-h: 48.25px;
     --nav-gap: 12px;
+    /* flex:none：flex-basis:0% 会丢弃下面的固定 height，必须用 auto 基准 */
+    flex: none; display: none; flex-direction: row; border-radius: var(--card-radius); margin-bottom: 10px; overflow: visible;
+}
+.cardItem.active {
+    display: flex; width: 100%; margin-bottom: 0;
+    /* 固定高度 = 4 行 + 3 间隙：各分类等高，悬停切换时不跳动 */
+    height: calc(var(--nav-row-h) * 4 + var(--nav-gap) * 3);
+}
+
+.cardItem.active .grid-container {
     display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: repeat(4, 1fr);
     grid-auto-rows: minmax(var(--nav-row-h), auto);
-    gap: var(--nav-gap); width: 100%;
-    /* 固定 4 行高度：竖向超长盒内滚动；横向禁止超宽、禁止滚动 */
-    height: calc(var(--nav-row-h) * 4 + var(--nav-gap) * 3);
+    gap: var(--nav-gap); width: 100%; height: 100%;
+    /* 竖向超长盒内滚动；横向禁止超宽、禁止滚动 */
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -966,7 +972,8 @@ html.dark-mode .el-button:hover { box-shadow: 0 4px 15px var(--glow-color), 0 2p
     .search-option { padding: 10px 12px; text-align: center; border-radius: var(--card-radius-sm); background: rgba(0,0,0,0.03); font-size: 0.85rem; }
     html.dark-mode .search-option { background: rgba(255,255,255,0.05); }
     .search-option:active { transform: scale(0.96); }
-    .cardItem.active .grid-container { grid-template-columns: repeat(3, minmax(0, 1fr)); --nav-row-h: 58px; --nav-gap: 8px; }
+    .cardItem.active .grid-container { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .cardItem { --nav-row-h: 58px; --nav-gap: 8px; }
     .grid-item { padding: 12px 8px; }
     .grid-item span { font-size: 0.78rem; }
 }
