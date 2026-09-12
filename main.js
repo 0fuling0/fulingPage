@@ -737,8 +737,7 @@ function disposeVueApps() {
 }
 
 /* ===== Rain Effect (no wave/ripple interaction) ===== */
-let rainCanvas, rainCtx, drops = [], splashes = [], splashCount = 0, rainAnimId, rainRunning = false, cardRects = [];
-let rainScrollThrottle = false;
+let rainCanvas, rainCtx, drops = [], splashes = [], splashCount = 0, rainAnimId, rainRunning = false;
 const rainCfg = {
     dropCount: 80, dropSpeed: 8, dropLength: 35, dropWidth: 2.5,
     color: 'rgba(174, 194, 224, 0.5)',
@@ -749,21 +748,8 @@ function rainResize() { if (rainCanvas) { rainCanvas.width = innerWidth; rainCan
 function createDrop() {
     return { x: Math.random() * rainCanvas.width, y: Math.random() * rainCanvas.height - rainCanvas.height,
         speed: rainCfg.dropSpeed + Math.random() * 5, length: rainCfg.dropLength + Math.random() * 10, opacity: 0.3 + Math.random() * 0.4,
-        hitCard: false, hitBottom: false };
+        hitBottom: false };
 }
-function updateCardRects() {
-    const els = document.querySelectorAll('.card, header, footer');
-    cardRects.length = 0;
-    for (let i = 0; i < els.length; i++) cardRects.push(els[i].getBoundingClientRect());
-}
-function isOnCard(x, y) {
-    for (let i = 0, len = cardRects.length; i < len; i++) {
-        const r = cardRects[i];
-        if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return true;
-    }
-    return false;
-}
-
 function rainAnimate() {
     if (!rainRunning) return;
     const w = rainCanvas.width, h = rainCanvas.height;
@@ -782,16 +768,7 @@ function rainAnimate() {
         const d = drops[i];
         d.y += d.speed;
         const dy = d.y + d.length;
-        // Card splash
-        if (!d.hitCard && isOnCard(d.x, dy)) {
-            d.hitCard = true;
-            if (Math.random() > 0.7) {
-                const particles = [];
-                for (let j = 0; j < 4; j++) particles.push({ angle: Math.random() * TWO_PI, speed: 1 + Math.random() * 2, size: 2 + Math.random() * 2, life: 1 });
-                splashes[splashCount++] = { x: d.x, y: dy, radius: 0, opacity: 0.6, isBottom: false, particles };
-            }
-        }
-        // Bottom splash
+        // 溅落只在当前窗口底部出现
         if (!d.hitBottom && dy >= h) {
             d.hitBottom = true;
             if (Math.random() > 0.4) {
@@ -799,10 +776,10 @@ function rainAnimate() {
                 const pCount = 5 + ((Math.random() * 4) | 0);
                 const particles = [];
                 for (let j = 0; j < pCount; j++) particles.push({ vx: (Math.random() - 0.5) * 4, vy: -(2 + Math.random() * 4), size: 1.5 + Math.random() * 2, life: 1, gravity: 0.15 });
-                splashes[splashCount++] = { x: d.x, y: splashY, radius: 0, opacity: 0.7, isBottom: true, particles };
+                splashes[splashCount++] = { x: d.x, y: splashY, radius: 0, opacity: 0.7, particles };
             }
         }
-        if (d.y > h) { d.y = -d.length; d.x = Math.random() * w; d.hitCard = false; d.hitBottom = false; }
+        if (d.y > h) { d.y = -d.length; d.x = Math.random() * w; d.hitBottom = false; }
         // Group by quantized opacity
         const oKey = (d.opacity * 10 + 0.5) | 0;
         let grp = opacityGroups.get(oKey);
@@ -821,58 +798,39 @@ function rainAnimate() {
         ctx.stroke();
     });
 
-    // --- Update and draw splashes (in-place compaction, no new array) ---
+    // --- Update and draw bottom splashes only (in-place compaction, no new array) ---
     let writeIdx = 0;
     for (let i = 0; i < splashCount; i++) {
         const s = splashes[i];
         let keep = false;
-        if (s.isBottom) {
-            s.opacity -= 0.025;
-            if (s.opacity > 0) {
-                ctx.fillStyle = rainCfg.splashColor;
-                const pts = s.particles;
-                for (let j = 0, plen = pts.length; j < plen; j++) {
-                    const p = pts[j];
-                    if (p.life > 0) {
-                        keep = true;
-                        p.life -= 0.035;
-                        p.vy += p.gravity;
-                        p.vx *= 0.99;
-                        const factor = 1 - p.life;
-                        const px = s.x + p.vx * factor * 15;
-                        const py = s.y + p.vy * factor * 12;
-                        ctx.globalAlpha = s.opacity * p.life;
-                        ctx.beginPath();
-                        ctx.arc(px, py, p.size * p.life, 0, TWO_PI);
-                        ctx.fill();
-                    }
-                }
-                if (s.radius < 20) {
-                    s.radius += 1.5;
-                    ctx.strokeStyle = rainCfg.splashColor;
-                    ctx.globalAlpha = s.opacity * 0.5;
-                    ctx.lineWidth = 1;
+        s.opacity -= 0.025;
+        if (s.opacity > 0) {
+            ctx.fillStyle = rainCfg.splashColor;
+            const pts = s.particles;
+            for (let j = 0, plen = pts.length; j < plen; j++) {
+                const p = pts[j];
+                if (p.life > 0) {
+                    keep = true;
+                    p.life -= 0.035;
+                    p.vy += p.gravity;
+                    p.vx *= 0.99;
+                    const factor = 1 - p.life;
+                    const px = s.x + p.vx * factor * 15;
+                    const py = s.y + p.vy * factor * 12;
+                    ctx.globalAlpha = s.opacity * p.life;
                     ctx.beginPath();
-                    ctx.ellipse(s.x, s.y, s.radius, s.radius * 0.3, 0, 0, TWO_PI);
-                    ctx.stroke();
+                    ctx.arc(px, py, p.size * p.life, 0, TWO_PI);
+                    ctx.fill();
                 }
             }
-        } else {
-            s.radius += 2; s.opacity -= 0.03;
-            if (s.opacity > 0) {
-                keep = true;
-                ctx.strokeStyle = rainCfg.splashColor; ctx.globalAlpha = s.opacity; ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.arc(s.x, s.y, s.radius, 0, TWO_PI); ctx.stroke();
-                ctx.fillStyle = rainCfg.splashColor;
-                const pts = s.particles;
-                for (let j = 0, plen = pts.length; j < plen; j++) {
-                    const p = pts[j];
-                    if (p.life > 0) {
-                        p.life -= 0.05;
-                        ctx.globalAlpha = s.opacity * p.life; ctx.beginPath();
-                        ctx.arc(s.x + Math.cos(p.angle) * s.radius * p.speed * 0.5, s.y + Math.sin(p.angle) * s.radius * p.speed * 0.3 - s.radius * 0.5, p.size * p.life, 0, TWO_PI); ctx.fill();
-                    }
-                }
+            if (s.radius < 20) {
+                s.radius += 1.5;
+                ctx.strokeStyle = rainCfg.splashColor;
+                ctx.globalAlpha = s.opacity * 0.5;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.ellipse(s.x, s.y, s.radius, s.radius * 0.3, 0, 0, TWO_PI);
+                ctx.stroke();
             }
         }
         if (keep) splashes[writeIdx++] = s;
@@ -901,22 +859,13 @@ function initRainEffect(options = {}) {
     splashes = new Array(256);
     splashCount = 0;
     for (let i = 0; i < rainCfg.dropCount; i++) drops.push(createDrop());
-    updateCardRects();
     // Throttled resize
     let resizeTimer;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => { rainResize(); updateCardRects(); }, 100);
+        resizeTimer = setTimeout(rainResize, 100);
     }, { passive: true });
-    // Throttled scroll for card rects
-    window.addEventListener('scroll', () => {
-        if (!rainScrollThrottle) {
-            rainScrollThrottle = true;
-            requestAnimationFrame(() => { updateCardRects(); rainScrollThrottle = false; });
-        }
-    }, { passive: true });
-    setInterval(updateCardRects, 2000);
-    document.addEventListener('visibilitychange', () => { if (document.hidden) stopRain(); else { updateCardRects(); if (currentAnim === 'rain') startRain(); } }, { passive: true });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stopRain(); else if (currentAnim === 'rain') startRain(); }, { passive: true });
     startRain();
 }
 
@@ -947,7 +896,6 @@ function applyAnimation(id, persist = true) {
         stopCodeRain();
         initRainEffect(window.siteConfig?.rainEffect || {});
         rainCanvas.style.display = '';
-        updateCardRects();
         startRain();
     } else if (anim.id === 'code') {
         stopRain();
