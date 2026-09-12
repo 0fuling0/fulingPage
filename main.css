@@ -763,6 +763,11 @@ html.dark-mode .search-button:hover { box-shadow: 0 4px 15px var(--glow-color), 
     transform: translateY(-2px);
 }
 
+.cardItem.active .grid-item:nth-child(-n+6):hover {
+    /* 第一行上方没有空间：向上抬 2px 会被 grid-container 的 overflow 裁掉边缘，故不抬 */
+    transform: translateY(0);
+}
+
 .icon { width: 22px; height: 22px; margin-right: 10px; object-fit: contain; flex-shrink: 0; }
 .navButtons { display: flex; justify-content: center; gap: 10px; width: 100%; margin: 28px 0 20px; }
 .navigation-view .navigation-card { margin-bottom: 0; }
@@ -903,6 +908,8 @@ html.dark-mode .el-button:hover { box-shadow: 0 4px 15px var(--glow-color), 0 2p
     .select-styled, .search-input { padding: 10px 14px; font-size: 0.9rem; }
     .search-button { padding: 10px 16px; }
     .cardItem.active .grid-container { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .cardItem.active .grid-item:nth-child(-n+4):hover { transform: translateY(0); }
+    .cardItem.active .grid-item:nth-child(n+5):hover { transform: translateY(-2px); }
 }
 
 /* ========================================
@@ -975,6 +982,8 @@ html.dark-mode .el-button:hover { box-shadow: 0 4px 15px var(--glow-color), 0 2p
     html.dark-mode .search-option { background: rgba(255,255,255,0.05); }
     .search-option:active { transform: scale(0.96); }
     .cardItem.active .grid-container { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .cardItem.active .grid-item:nth-child(-n+3):hover { transform: translateY(0); }
+    .cardItem.active .grid-item:nth-child(n+4):hover { transform: translateY(-2px); }
     .cardItem { --nav-row-h: 58px; --nav-gap: 8px; }
     .grid-item { padding: 12px 8px; }
     .grid-item span { font-size: 0.78rem; }
