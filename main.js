@@ -8,7 +8,7 @@ function createLayers() {
     if (bgContainer) return;
     bgContainer = document.createElement('div');
     bgContainer.id = 'bg-container';
-    bgContainer.style.cssText = 'position:fixed;inset:0;z-index:-10;overflow:hidden;pointer-events:none;background:#1a1a2e';
+    bgContainer.style.cssText = 'position:fixed;inset:0;z-index:-10;overflow:hidden;pointer-events:none;background:#1a1a2e;transition:filter 0.6s ease,transform 0.6s ease';
     const css = 'position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:1';
     bottomLayer = document.createElement('div');
     bottomLayer.style.cssText = css;
@@ -28,14 +28,42 @@ function renderHeaderApp(config) {
             title: config?.header?.title || config?.siteInfo?.title || 'Homepage',
             motto: config?.siteInfo?.motto || '',
             links,
-            section: pageState.section
+            section: pageState.section,
+            themeId: getSiteTheme() || 'glass',
+            dark: isDark(),
+            themeMenuOpen: false,
+            bgFilterId: getBgFilter() || 'none',
+            animId: getAnimation() || 'rain',
+            siteThemes: SITE_THEMES,
+            bgFilters: BG_FILTERS,
+            animList: ANIMATIONS
         }),
         mounted() {
             this.sectionHandler = event => { this.section = event.detail; };
             document.addEventListener('sectionchange', this.sectionHandler);
+            this.siteThemeHandler = event => { this.themeId = event.detail; };
+            document.addEventListener('sitethemechange', this.siteThemeHandler);
+            this.bgFilterHandler = event => { this.bgFilterId = event.detail; };
+            document.addEventListener('bgfilterchange', this.bgFilterHandler);
+            this.animHandler = event => { this.animId = event.detail; };
+            document.addEventListener('animchange', this.animHandler);
+            this.darkModeHandler = event => { this.dark = event.detail; };
+            document.addEventListener('darkmodechange', this.darkModeHandler);
+            this.outsideHandler = event => {
+                if (!event.target.closest?.('.theme-menu')) this.themeMenuOpen = false;
+            };
+            document.addEventListener('click', this.outsideHandler);
+            this.escHandler = event => { if (event.key === 'Escape') this.themeMenuOpen = false; };
+            document.addEventListener('keydown', this.escHandler);
         },
         beforeUnmount() {
             document.removeEventListener('sectionchange', this.sectionHandler);
+            document.removeEventListener('sitethemechange', this.siteThemeHandler);
+            document.removeEventListener('bgfilterchange', this.bgFilterHandler);
+            document.removeEventListener('animchange', this.animHandler);
+            document.removeEventListener('darkmodechange', this.darkModeHandler);
+            document.removeEventListener('click', this.outsideHandler);
+            document.removeEventListener('keydown', this.escHandler);
         },
         methods: {
             navigate(link) {
@@ -44,6 +72,19 @@ function renderHeaderApp(config) {
             },
             toggleTheme() {
                 toggleDarkMode();
+            },
+            toggleThemeMenu() {
+                this.themeMenuOpen = !this.themeMenuOpen;
+            },
+            selectTheme(id) {
+                applySiteTheme(id);
+                this.themeMenuOpen = false;
+            },
+            selectBgFilter(id) {
+                applyBgFilter(id);
+            },
+            selectAnimation(id) {
+                applyAnimation(id);
             }
         },
         template: `
@@ -64,8 +105,38 @@ function renderHeaderApp(config) {
                     </nav>
                     <button class="header-dark-toggle" @click="toggleTheme"
                         aria-label="切换暗色模式" title="切换暗色模式">
-                        <i class="fas" :class="isDarkMode() ? 'fa-sun' : 'fa-moon'"></i>
+                        <i class="fas" :class="dark ? 'fa-sun' : 'fa-moon'"></i>
                     </button>
+                    <div class="theme-menu">
+                        <button class="header-dark-toggle" @click="toggleThemeMenu"
+                            aria-label="主题与背景滤镜" title="主题与背景滤镜"
+                            aria-haspopup="menu" :aria-expanded="themeMenuOpen">
+                            <i class="fas fa-palette"></i>
+                        </button>
+                        <div class="theme-menu-panel" v-show="themeMenuOpen" role="menu">
+                            <div class="theme-menu-group">主题</div>
+                            <button v-for="t in siteThemes" :key="t.id" type="button" role="menuitemradio"
+                                :aria-checked="themeId === t.id" class="theme-menu-item"
+                                :class="{ active: themeId === t.id }" @click="selectTheme(t.id)">
+                                <span class="theme-menu-swatch"><span v-for="c in t.colors" :key="c"
+                                    class="swatch-dot" :style="{ background: c }"></span>{{ t.name }}</span>
+                                <i v-if="themeId === t.id" class="fas fa-check"></i>
+                            </button>
+                            <div class="theme-menu-group">背景滤镜</div>
+                            <button v-for="f in bgFilters" :key="f.id" type="button" role="menuitemradio"
+                                :aria-checked="bgFilterId === f.id" class="theme-menu-item"
+                                :class="{ active: bgFilterId === f.id }" @click="selectBgFilter(f.id)">
+                                <span>{{ f.name }}</span><i v-if="bgFilterId === f.id" class="fas fa-check"></i>
+                            </button>
+                            <div class="theme-menu-group">动画</div>
+                            <button v-for="a in animList" :key="a.id" type="button" role="menuitemradio"
+                                :aria-checked="animId === a.id" class="theme-menu-item"
+                                :class="{ active: animId === a.id }" @click="selectAnimation(a.id)">
+                                <span class="theme-menu-swatch"><i :class="a.icon" style="width:18px;text-align:center;font-size:0.8rem;color:var(--muted-color)"></i>{{ a.name }}</span>
+                                <i v-if="animId === a.id" class="fas fa-check"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="header-indicator"></div>
@@ -76,7 +147,6 @@ function renderHeaderApp(config) {
             }
         }
     });
-    app.config.globalProperties.isDarkMode = isDark;
     headerApp = app;
     app.mount(mount);
 }
@@ -95,6 +165,8 @@ function preloadImage(src) {
     const loadUrl = isApiUrl(src) ? getCacheBustedUrl(src) : src;
     return new Promise(res => {
         const img = new Image();
+        img.decoding = 'async';
+        if ('fetchPriority' in img) img.fetchPriority = 'low'; // 背景图不与关键资源抢占带宽
         img.onload = () => { if (!isApiUrl(src)) preloadCache.add(src); res(true); };
         img.onerror = () => res(false);
         img.src = loadUrl;
@@ -143,6 +215,7 @@ function initBackgroundImage(config) {
     try { bgState.currentIndex = (parseInt(localStorage.getItem('bgIndex')) || 0) % bgState.images.length; } catch { bgState.currentIndex = 0; }
     document.body.style.backgroundImage = 'none';
     createLayers();
+    initBgFilter();
     switchBg(bgState.currentIndex, false);
     startBgAutoPlay();
     if (bgVisibilityHandler) document.removeEventListener('visibilitychange', bgVisibilityHandler);
@@ -260,7 +333,7 @@ let dateF, timeF, jinrishiciTimer, clockTimer, runtimeTimer, clockVisibilityHand
 let clockEls = null, lastDateStr = '', lastTimeStr = '';
 
 function updateClock() {
-    if (!clockEls) clockEls = document.querySelectorAll('.clock');
+    if (!clockEls) clockEls = [...document.querySelectorAll('.clock')].map(el => ({ el, dateEl: null, timeEl: null }));
     if (!clockEls.length) return;
     if (!dateF) {
         dateF = new Intl.DateTimeFormat('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -273,11 +346,14 @@ function updateClock() {
     if (!dateChanged && !timeChanged) return;
     lastDateStr = d; lastTimeStr = t;
     for (let i = 0, len = clockEls.length; i < len; i++) {
-        const el = clockEls[i];
-        if (!el.querySelector('.clock-date'))
-            el.innerHTML = '<div class="clock-date"></div><div class="clock-time"></div>';
-        if (dateChanged) el.querySelector('.clock-date').textContent = d;
-        if (timeChanged) el.querySelector('.clock-time').textContent = t;
+        const c = clockEls[i];
+        if (!c.dateEl) {
+            c.el.innerHTML = '<div class="clock-date"></div><div class="clock-time"></div>';
+            c.dateEl = c.el.querySelector('.clock-date');
+            c.timeEl = c.el.querySelector('.clock-time');
+        }
+        if (dateChanged) c.dateEl.textContent = d;
+        if (timeChanged) c.timeEl.textContent = t;
     }
 }
 
@@ -363,13 +439,19 @@ function setTheme(dark) {
     h.classList.toggle('dark-mode', dark);
     h.classList.toggle('light', !dark);
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? THEME.dark : THEME.light);
+    document.dispatchEvent(new CustomEvent('darkmodechange', { detail: dark }));
 }
 
-function updateDarkModeIcons() {
-    const cls = isDark() ? 'fas fa-sun' : 'fas fa-moon';
-    document.querySelector('#darkModeToggle i')?.setAttribute('class', cls);
-    const fi = document.getElementById('footerDarkIcon');
-    if (fi) fi.className = cls;
+function initDarkMode() {
+    const saved = localStorage.getItem('darkMode');
+    const dark = saved !== null ? saved === 'true' : matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(dark);
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => setTheme(e.matches));
+}
+
+function toggleDarkMode() {
+    setTheme(!isDark());
+    localStorage.setItem('darkMode', isDark());
 }
 
 function handleScroll() {
@@ -380,19 +462,79 @@ function handleScroll() {
     lastScrollY = y;
 }
 
-function initDarkMode() {
-    const saved = localStorage.getItem('darkMode');
-    const dark = saved !== null ? saved === 'true' : matchMedia('(prefers-color-scheme: dark)').matches;
-    setTheme(dark);
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-        setTheme(e.matches); updateDarkModeIcons();
-    });
+/* ===== Site Theme (Stage 4) ===== */
+const SITE_THEMES = [
+    { id: 'glass', name: '玻璃卡片', colors: ['#8fb7ff', '#c5b3ff', '#7de3ff'] },
+    { id: 'minimal', name: '极简素白', colors: ['#ffffff', '#18181b', '#a1a1aa'] },
+    { id: 'newspaper', name: '简约报纸', colors: ['#f6f3ec', '#1c1a17', '#8c2f1c'] },
+    { id: 'terminal', name: '终端极客', colors: ['#eef2ee', '#16a34a', '#060a07'] }
+];
+
+function getSiteTheme() {
+    let id = null;
+    try { id = localStorage.getItem('siteTheme'); } catch {}
+    return SITE_THEMES.some(theme => theme.id === id) ? id : '';
 }
 
-function toggleDarkMode() {
-    const dark = !isDark();
-    setTheme(dark); updateDarkModeIcons();
-    localStorage.setItem('darkMode', dark);
+function applySiteTheme(id, persist = true) {
+    const theme = SITE_THEMES.find(t => t.id === id) || SITE_THEMES[0];
+    document.documentElement.setAttribute('data-theme', theme.id);
+    // 仅在访客手动选择时持久化；初始化应用配置默认值时不写入，
+    // 这样站长修改 config.json 的 theme.default 后对所有未手动选择的访客生效。
+    if (persist) {
+        try { localStorage.setItem('siteTheme', theme.id); } catch {}
+    }
+    // 用户未手动选过滤镜时，跟随主题的默认背景滤镜
+    if (!getBgFilter()) applyBgFilter(getThemeBgFilter(theme.id) || 'none', false);
+    document.dispatchEvent(new CustomEvent('sitethemechange', { detail: theme.id }));
+    return theme.id;
+}
+
+function initSiteTheme(defaultId) {
+    applySiteTheme(getSiteTheme() || (SITE_THEMES.some(t => t.id === defaultId) ? defaultId : SITE_THEMES[0].id), false);
+}
+
+/* ===== Background Filters ===== */
+const BG_FILTERS = [
+    { id: 'none', name: '原图' },
+    { id: 'blur', name: '模糊', filter: 'blur(16px)', scale: 1.08 },
+    { id: 'bright', name: '提亮', filter: 'brightness(1.18) saturate(1.08)' },
+    { id: 'dim', name: '压暗', filter: 'brightness(0.72) saturate(0.95)' },
+    { id: 'mono', name: '黑白', filter: 'grayscale(1) contrast(1.05)' },
+    { id: 'sepia', name: '怀旧', filter: 'sepia(0.5) saturate(1.1)' },
+    { id: 'vivid', name: '鲜艳', filter: 'saturate(1.55) contrast(1.08)' }
+];
+
+function getBgFilter() {
+    let id = null;
+    try { id = localStorage.getItem('bgFilter'); } catch {}
+    return BG_FILTERS.some(f => f.id === id) ? id : '';
+}
+
+function getThemeBgFilter(themeId) {
+    const t = window.siteConfig?.theme || {};
+    const map = t.bgFilters;
+    if (map && BG_FILTERS.some(f => f.id === map[themeId])) return map[themeId];
+    // 未单独列出的主题回退到全局默认滤镜
+    if (t.bgFilter && BG_FILTERS.some(f => f.id === t.bgFilter)) return t.bgFilter;
+    return '';
+}
+
+function applyBgFilter(id, persist = true) {
+    const preset = BG_FILTERS.find(f => f.id === id) || BG_FILTERS[0];
+    if (bgContainer) {
+        bgContainer.style.filter = preset.filter || '';
+        bgContainer.style.transform = preset.scale ? `scale(${preset.scale})` : '';
+    }
+    if (persist) {
+        try { localStorage.setItem('bgFilter', preset.id); } catch {}
+    }
+    document.dispatchEvent(new CustomEvent('bgfilterchange', { detail: preset.id }));
+    return preset.id;
+}
+
+function initBgFilter() {
+    applyBgFilter(getBgFilter() || getThemeBgFilter(document.documentElement.getAttribute('data-theme') || 'glass') || 'none', false);
 }
 
 function updateNavActive(sectionId) {
@@ -488,8 +630,8 @@ function renderNavigationApp(cards) {
                         </div>
                     </div>
                     <input v-model="searchTerm" class="search-input" placeholder="输入搜索词"
-                        @keydown.enter="search">
-                    <button type="button" class="search-button" @click="search">
+                        aria-label="输入搜索词" @keydown.enter="search">
+                    <button type="button" class="search-button" aria-label="搜索" @click="search">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </button>
                 </div>
@@ -514,9 +656,6 @@ function renderNavigationApp(cards) {
             </section>
         `,
         computed: {
-            activeCard() {
-                return this.cards.find(card => card.id === this.currentCard) || this.cards[0];
-            },
             searchUrls() {
                 return SEARCH_URLS;
             }
@@ -544,7 +683,6 @@ function showSection(id) {
 
 function startTimer(n) { navTimer = setTimeout(() => showCard(n), 500); }
 function clearTimer() { clearTimeout(navTimer); }
-function switchToCard(n) { clearTimeout(navTimer); showCard(n); }
 
 function handleHash() {
     const h = location.hash.substring(1);
@@ -740,6 +878,7 @@ function stopRain() { rainRunning = false; if (rainAnimId) { cancelAnimationFram
 
 function initRainEffect(options = {}) {
     Object.assign(rainCfg, options);
+    if (rainCanvas) return; // 已初始化过，仅更新配置
     rainCanvas = document.createElement('canvas');
     rainCanvas.id = 'rain-canvas';
     rainCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1';
@@ -765,8 +904,180 @@ function initRainEffect(options = {}) {
         }
     }, { passive: true });
     setInterval(updateCardRects, 2000);
-    document.addEventListener('visibilitychange', () => { if (document.hidden) stopRain(); else { updateCardRects(); startRain(); } }, { passive: true });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stopRain(); else { updateCardRects(); if (currentAnim === 'rain') startRain(); } }, { passive: true });
     startRain();
+}
+
+/* ===== Background Animations (雨滴 / 代码流动) ===== */
+const ANIMATIONS = [
+    { id: 'none', name: '无', icon: 'fa-solid fa-ban' },
+    { id: 'rain', name: '雨滴', icon: 'fa-solid fa-cloud-rain' },
+    { id: 'code', name: '代码流动', icon: 'fa-solid fa-code' }
+];
+let currentAnim = null;
+
+function getAnimation() {
+    let id = null;
+    try { id = localStorage.getItem('siteAnim'); } catch {}
+    return ANIMATIONS.some(a => a.id === id) ? id : '';
+}
+
+function getAnimationDefault() {
+    const t = window.siteConfig?.animation?.default;
+    if (ANIMATIONS.some(a => a.id === t)) return t;
+    return window.siteConfig?.rainEffect?.enabled === false ? 'none' : 'rain';
+}
+
+function applyAnimation(id, persist = true) {
+    const anim = ANIMATIONS.find(a => a.id === id) || ANIMATIONS[0];
+    currentAnim = anim.id;
+    if (anim.id === 'rain') {
+        stopCodeRain();
+        initRainEffect(window.siteConfig?.rainEffect || {});
+        rainCanvas.style.display = '';
+        updateCardRects();
+        startRain();
+    } else if (anim.id === 'code') {
+        stopRain();
+        if (rainCanvas) { rainCanvas.style.display = 'none'; if (rainCtx) rainCtx.clearRect(0, 0, rainCanvas.width, rainCanvas.height); }
+        startCodeRain();
+    } else {
+        stopRain();
+        stopCodeRain();
+        if (rainCanvas) { rainCanvas.style.display = 'none'; if (rainCtx) rainCtx.clearRect(0, 0, rainCanvas.width, rainCanvas.height); }
+    }
+    if (persist) {
+        try { localStorage.setItem('siteAnim', anim.id); } catch {}
+    }
+    document.dispatchEvent(new CustomEvent('animchange', { detail: anim.id }));
+    return anim.id;
+}
+
+function initAnimation() {
+    applyAnimation(getAnimation() || getAnimationDefault(), false);
+}
+
+/* ===== Code Rain（复用雨滴逻辑：等宽竖列字符匀速下落） ===== */
+const CODE_CHARS = 'アイウエオカキクケコサシスセソ01ABCDEF$#*+-=<>';
+let codeCanvas, codeCtx, codeDrops = [], codeAnimId, codeRunning = false;
+let codeVisHandler = null, codeThemeHandler = null;
+const codeCfg = {
+    fontSize: 15,
+    dropCount: 80,   // 列数，对应雨滴 dropCount
+    dropSpeed: 8,    // 下落速度 px/帧，对应雨滴 dropSpeed
+    trail: 12,       // 每列尾迹字符数，对应雨滴 length
+    color: '#4ade80',
+    headColor: '#ffffff'
+};
+
+function codeResize() { if (codeCanvas) { codeCanvas.width = innerWidth; codeCanvas.height = innerHeight; } }
+function randomCodeChar() { return CODE_CHARS[(Math.random() * CODE_CHARS.length) | 0]; }
+function createCodeDrop(initial) {
+    const w = codeCanvas ? codeCanvas.width : innerWidth;
+    const h = codeCanvas ? codeCanvas.height : innerHeight;
+    const chars = new Array(codeCfg.trail);
+    for (let i = 0; i < chars.length; i++) chars[i] = randomCodeChar();
+    return {
+        x: Math.random() * w,
+        y: initial ? Math.random() * h - h : -chars.length * codeCfg.fontSize,
+        speed: codeCfg.dropSpeed + Math.random() * 5,
+        opacity: 0.35 + Math.random() * 0.45,
+        chars
+    };
+}
+
+// 主题色只在启动 / 主题切换时读取一次，避免每帧 getComputedStyle
+function refreshCodeColor() {
+    try {
+        codeCfg.color = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#4ade80';
+    } catch { codeCfg.color = '#4ade80'; }
+    codeCfg.headColor = isDark() ? '#ffffff' : '#f8fafc';
+}
+
+function createCodeCanvas() {
+    if (codeCanvas) return;
+    codeCanvas = document.createElement('canvas');
+    codeCanvas.id = 'code-canvas';
+    codeCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1';
+    document.body.insertBefore(codeCanvas, document.body.firstChild);
+    codeCtx = codeCanvas.getContext('2d');
+    codeResize();
+    for (let i = 0; i < codeCfg.dropCount; i++) codeDrops.push(createCodeDrop(true));
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(codeResize, 100);
+    }, { passive: true });
+    codeVisHandler = () => {
+        if (document.hidden) {
+            if (codeAnimId) { cancelAnimationFrame(codeAnimId); codeAnimId = null; }
+        } else if (currentAnim === 'code' && codeRunning && !codeAnimId) {
+            codeAnimId = requestAnimationFrame(codeAnimate);
+        }
+    };
+    document.addEventListener('visibilitychange', codeVisHandler, { passive: true });
+    // 主题 / 明暗变化时刷新颜色，动画无需重启
+    codeThemeHandler = () => { if (currentAnim === 'code') refreshCodeColor(); };
+    document.addEventListener('sitethemechange', codeThemeHandler);
+    document.addEventListener('darkmodechange', codeThemeHandler);
+}
+
+function codeAnimate() {
+    if (!codeRunning) return;
+    const w = codeCanvas.width, h = codeCanvas.height;
+    codeCtx.clearRect(0, 0, w, h);
+    const ctx = codeCtx, fs = codeCfg.fontSize;
+    ctx.font = fs + 'px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
+    ctx.textBaseline = 'top';
+    for (let i = 0, len = codeDrops.length; i < len; i++) {
+        const d = codeDrops[i];
+        d.y += d.speed;
+        // 落出屏幕后回到顶部（同雨滴重置逻辑）
+        if (d.y - d.chars.length * fs > h) Object.assign(d, createCodeDrop(false));
+        // 头部换新字符，尾迹偶尔闪烁其一
+        d.chars[0] = randomCodeChar();
+        if (Math.random() < 0.1) d.chars[(Math.random() * d.chars.length) | 0] = randomCodeChar();
+    }
+    // 尾迹：主题色，按行衰减（两次 fillStyle 切换即可）
+    ctx.fillStyle = codeCfg.color;
+    for (let i = 0, len = codeDrops.length; i < len; i++) {
+        const d = codeDrops[i], n = d.chars.length;
+        for (let j = 1; j < n; j++) {
+            ctx.globalAlpha = d.opacity * (1 - j / n);
+            ctx.fillText(d.chars[j], d.x, d.y - j * fs);
+        }
+    }
+    // 头部：高亮
+    ctx.fillStyle = codeCfg.headColor;
+    for (let i = 0, len = codeDrops.length; i < len; i++) {
+        const d = codeDrops[i];
+        ctx.globalAlpha = d.opacity;
+        ctx.fillText(d.chars[0], d.x, d.y);
+    }
+    ctx.globalAlpha = 1;
+    codeAnimId = requestAnimationFrame(codeAnimate);
+}
+
+function startCodeRain() {
+    if (currentAnim !== 'code') return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    createCodeCanvas();
+    codeCanvas.style.display = '';
+    refreshCodeColor();
+    codeResize();
+    if (codeRunning && codeAnimId) return;
+    codeRunning = true;
+    if (codeAnimId) cancelAnimationFrame(codeAnimId);
+    codeAnimId = requestAnimationFrame(codeAnimate);
+}
+
+function stopCodeRain() {
+    codeRunning = false;
+    if (codeAnimId) { cancelAnimationFrame(codeAnimId); codeAnimId = null; }
+    if (codeCanvas && codeCtx) {
+        codeCtx.clearRect(0, 0, codeCanvas.width, codeCanvas.height);
+        codeCanvas.style.display = 'none';
+    }
 }
 
 /* ===== Search ===== */
@@ -820,8 +1131,10 @@ function renderHomepageCards(cards) {
                 if (runtime?.showRuntime && window.siteConfig?.siteInfo?.startDate)
                     updateRuntimeInfo(window.siteConfig.siteInfo.startDate);
                 const comments = this.cards.find(card => card.type === 'comments');
-                if (comments?.settings && window.twikoo)
-                    twikoo.init({ envId: comments.settings.envId, el: '#tcomment' });
+                if (comments?.settings) {
+                    const init = () => { if (window.twikoo) twikoo.init({ envId: comments.settings.envId, el: '#tcomment' }); };
+                    (twikooReady || Promise.resolve()).then(init, init);
+                }
             });
         },
         template: `
@@ -944,13 +1257,17 @@ function renderFooterApp(config) {
             copyright: config?.footer?.copyright || '',
             startDate: config?.siteInfo?.startDate || '',
             runtimeDays: 0,
-            blog
+            blog,
+            dark: isDark()
         }),
         mounted() {
+            this.darkModeHandler = event => { this.dark = event.detail; };
+            document.addEventListener('darkmodechange', this.darkModeHandler);
             this.updateRuntime();
             runtimeTimer = setInterval(() => this.updateRuntime(), 36e5);
         },
         beforeUnmount() {
+            document.removeEventListener('darkmodechange', this.darkModeHandler);
             if (runtimeTimer) { clearInterval(runtimeTimer); runtimeTimer = null; }
         },
         methods: {
@@ -963,9 +1280,6 @@ function renderFooterApp(config) {
             },
             toggleTheme() {
                 toggleDarkMode();
-            },
-            isDarkMode() {
-                return isDark();
             },
             scrollTop() {
                 scrollToTop();
@@ -987,12 +1301,12 @@ function renderFooterApp(config) {
                     <a href="#nav" @click.prevent="goTo('navpage')" aria-label="导航">
                         <i class="fas fa-compass"></i>
                     </a>
-                    <a href="#" @click.prevent="toggleTheme" aria-label="切换暗色模式">
-                        <i class="fas" :class="isDarkMode() ? 'fa-sun' : 'fa-moon'"></i>
-                    </a>
-                    <a href="#" @click.prevent="scrollTop" aria-label="返回顶部">
+                    <button type="button" @click="toggleTheme" aria-label="切换暗色模式">
+                        <i class="fas" :class="dark ? 'fa-sun' : 'fa-moon'"></i>
+                    </button>
+                    <button type="button" @click="scrollTop" aria-label="返回顶部">
                         <i class="fas fa-arrow-up"></i>
-                    </a>
+                    </button>
                 </div>
             </div>
         `
@@ -1038,6 +1352,51 @@ function dismissLoading() {
     if (el) el.classList.add('fade-out');
 }
 
+/* ===== Lazy third-party libs (依 config 按需加载，未启用的组件不下载) ===== */
+const LAZY_LIBS = {
+    twikoo: 'https://cdn.jsdelivr.net/npm/twikoo@1.6.41/dist/twikoo.min.js',
+    aplayerCss: 'https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css',
+    aplayer: 'https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js',
+    meting: 'https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js'
+};
+let twikooReady = null;
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const el = document.createElement('script');
+        el.src = src;
+        el.onload = resolve;
+        el.onerror = reject;
+        document.body.appendChild(el);
+    });
+}
+
+function loadStylesheet(href) {
+    return new Promise((resolve, reject) => {
+        const el = document.createElement('link');
+        el.rel = 'stylesheet';
+        el.href = href;
+        el.onload = resolve;
+        el.onerror = reject;
+        document.head.appendChild(el);
+    });
+}
+
+function initLazyThirdParty(config) {
+    const cards = config.homepage?.cards || [];
+    const enabled = type => cards.some(card => card.type === type && card.enabled !== false);
+    if (enabled('comments')) {
+        twikooReady = loadScript(LAZY_LIBS.twikoo);
+    }
+    if (enabled('music')) {
+        // APlayer 样式 → APlayer → Meting 顺序加载；Meting 定义自定义元素后会自动升级页面中已有的 <meting-js>
+        loadStylesheet(LAZY_LIBS.aplayerCss)
+            .then(() => loadScript(LAZY_LIBS.aplayer))
+            .then(() => loadScript(LAZY_LIBS.meting))
+            .catch(() => {});
+    }
+}
+
 function loadConfigs() {
     const loadJson = url => fetch(url).then(response => {
         if (!response.ok) throw new Error(`${url} returned ${response.status}`);
@@ -1059,9 +1418,11 @@ function initStaticEvents() {
 Object.assign(window, {
     startTimer,
     clearTimer,
-    switchToCard,
     showSection,
     toggleDarkMode,
+    applySiteTheme,
+    applyBgFilter,
+    applyAnimation,
     scrollToTop,
     disposeVueApps,
 });
@@ -1071,7 +1432,6 @@ initDarkMode();
 window.addEventListener('beforeunload', disposeVueApps, { once: true });
 
 document.addEventListener('DOMContentLoaded', () => {
-    updateDarkModeIcons();
     renderLoadingApp();
     initClock();
     initStaticEvents();
@@ -1079,11 +1439,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!config || !navData) return;
         window.siteConfig = config;
         initSiteWithConfig(config);
+        initSiteTheme(config.theme?.default);
         initHeaderAndFooter(config);
         renderHeaderApp(config);
         renderFooterApp(config);
         initBackgroundImage(config.backgroundImages);
-        if (config.rainEffect?.enabled !== false) initRainEffect(config.rainEffect);
+        initAnimation();
+        initLazyThirdParty(config);
         if (config.carousel?.images) {
             setCarouselImages(config.carousel.images);
             setAutoSlideInterval(config.carousel.interval || 10000);

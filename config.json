@@ -4,6 +4,16 @@
     "motto": "休言万事转头空，未转头时皆梦。",
     "startDate": "2024-03-04T00:00:00Z"
     },
+    "theme": {
+        "default": "glass",
+        "bgFilter": "none",
+        "bgFilters": {
+            "glass": "blur",
+            "minimal": "none",
+            "newspaper": "none",
+            "terminal": "dim"
+        }
+    },
     "header": {
         "title": "FULING'S HOMEPAGE",
         "navTitle": "FULING'S NAVIGATION",
@@ -39,6 +49,9 @@
             "https://t.mwm.moe/fj"
         ],
         "interval": 10000
+    },
+    "animation": {
+        "default": "rain"
     },
     "rainEffect": {
         "enabled": true,

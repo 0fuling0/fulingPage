@@ -31,16 +31,17 @@
     
     <!-- 延迟加载的外部资源 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css" media="print" onload="this.media='all'">
-    
+
+    <!-- 预连接 -->
+    <link rel="dns-prefetch" href="https://npm.onmicrosoft.cn">
+    <link rel="preload" href="config.json" as="fetch">
+    <link rel="preload" href="nav.json" as="fetch">
+
     <!-- 今日诗词 SDK -->
     <script defer src="https://sdk.jinrishici.com/v2/browser/jinrishici.js" charset="utf-8"></script>
-    
-    <!-- 延迟加载的脚本 -->
+
+    <!-- 延迟加载的脚本（评论 Twikoo、音乐 APlayer/Meting 由 main.js 依 config 按需加载） -->
     <script defer src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/twikoo@1.6.41/dist/twikoo.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js"></script>
     
     <script>
         const root = document.documentElement;
@@ -49,6 +50,9 @@
         root.classList.add(savedMode !== null
             ? (savedMode === 'true' ? 'dark-mode' : 'light')
             : (prefersDark ? 'dark-mode' : 'light'));
+
+        const savedSiteTheme = localStorage.getItem('siteTheme');
+        if (savedSiteTheme) root.setAttribute('data-theme', savedSiteTheme);
 
         const { pathname } = window.location;
         if (!pathname.endsWith('/') && pathname !== '/index.html' && !pathname.includes('.')) {
