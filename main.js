@@ -624,18 +624,104 @@ function showCard(n) {
         buttons[i].classList.toggle('current', buttons[i].dataset.card == n);
 }
 
+/* ===== Nav favicons（先显示占位图标，首访完成后自动抓取各站真实图标并缓存本地） ===== */
+const NAV_FAVICON_KEY = 'navFavicons';
+const NAV_ICON_PLACEHOLDER = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#475569"/><circle cx="16" cy="16" r="8.5" fill="none" stroke="#e2e8f0" stroke-width="2.5"/><path d="M16 7v18M8.5 16h15" stroke="#e2e8f0" stroke-width="2.5"/></svg>');
+
+function getNavFaviconCache() {
+    try { return JSON.parse(localStorage.getItem(NAV_FAVICON_KEY)) || {}; } catch { return {}; }
+}
+
+function saveNavFavicon(host, url) {
+    const cache = getNavFaviconCache();
+    cache[host] = url;
+    try { localStorage.setItem(NAV_FAVICON_KEY, JSON.stringify(cache)); } catch {}
+}
+
+function deleteNavFavicon(host) {
+    const cache = getNavFaviconCache();
+    delete cache[host];
+    try { localStorage.setItem(NAV_FAVICON_KEY, JSON.stringify(cache)); } catch {}
+}
+
+function navFaviconSources(host) {
+    return [
+        `https://icons.duckduckgo.com/ip3/${host}.ico`,
+        `https://www.google.com/s2/favicons?domain=${host}&sz=64`,
+        `https://${host}/favicon.ico`
+    ];
+}
+
+function probeNavFavicon(url) {
+    return new Promise(res => {
+        const img = new Image();
+        const timer = setTimeout(() => { img.src = ''; res(null); }, 8000);
+        img.onload = () => { clearTimeout(timer); res(img.naturalWidth >= 16 ? url : null); };
+        img.onerror = () => { clearTimeout(timer); res(null); };
+        img.src = url;
+    });
+}
+
+function applyNavIcons() {
+    const cache = getNavFaviconCache();
+    const pending = [];
+    document.querySelectorAll('.cardItem .grid-item').forEach(a => {
+        const img = a.querySelector('img.icon');
+        if (!img || !a.href) return;
+        let host = '';
+        try { host = new URL(a.href).hostname; } catch { return; }
+        img.dataset.host = host;
+        // 占位图标：nav.json 指定图标，缺省用通用地球占位
+        const fallback = img.dataset.iconFallback || NAV_ICON_PLACEHOLDER;
+        // 真实图标加载失败时回退占位图标，并清除缓存条目以便下次重试
+        img.onerror = () => {
+            img.onerror = null;
+            deleteNavFavicon(host);
+            img.src = fallback;
+        };
+        const cached = cache[host];
+        if (cached) { img.src = cached; return; }
+        pending.push({ img, host, fallback });
+    });
+    if (!pending.length) return;
+    const run = () => pending.forEach(({ img, host, fallback }) => {
+        const sources = navFaviconSources(host);
+        const tryNext = i => {
+            if (i >= sources.length) return; // 所有源都失败，保持占位图标
+            probeNavFavicon(sources[i]).then(found => {
+                if (found) {
+                    img.onerror = () => { img.onerror = null; deleteNavFavicon(host); img.src = fallback; };
+                    img.src = found;
+                    saveNavFavicon(host, found);
+                } else tryNext(i + 1);
+            });
+        };
+        tryNext(0);
+    });
+    (window.requestIdleCallback || (cb => setTimeout(cb, 800)))(run);
+}
+
 function renderNavigationApp(cards) {
     const mount = document.getElementById('navpage-app');
     if (!mount || !window.Vue) return;
     navigationApp?.unmount();
     navigationView = null;
+    // 已缓存的真实图标放入独立字段；nav.json 的图标保留为回退占位
+    const favicons = getNavFaviconCache();
+    cards.forEach(c => c.items.forEach(i => {
+        try {
+            const host = new URL(i.url, location.href).hostname;
+            if (favicons[host]) { i.cachedFavicon = favicons[host]; i.iconFallback = i.icon || NAV_ICON_PLACEHOLDER; }
+        } catch {}
+    }));
     const app = Vue.createApp({
         data: () => ({
             cards,
             currentCard: cards[0]?.id || '',
             engine: localStorage.getItem('lastSelectedEngine') || 'Google',
             searchTerm: '',
-            optionsOpen: false
+            optionsOpen: false,
+            placeholderIcon: NAV_ICON_PLACEHOLDER
         }),
         mounted() {
             refreshClockEls();
@@ -697,7 +783,7 @@ function renderNavigationApp(cards) {
                         <div class="grid-container">
                             <a v-for="item in card.items" :key="item.url" :href="item.url" target="_blank"
                                 rel="noopener noreferrer" class="grid-item">
-                                <img class="icon" :src="item.icon" :alt="item.name" loading="lazy">
+                                <img class="icon" :src="item.cachedFavicon || item.icon || placeholderIcon" :data-icon-fallback="item.icon || placeholderIcon" :alt="item.name" loading="lazy">
                                 <span>{{ item.name }}</span>
                             </a>
                         </div>
@@ -713,6 +799,9 @@ function renderNavigationApp(cards) {
     });
     navigationApp = app;
     navigationView = app.mount(mount);
+    // 首访完成后（空闲时段）抓取各站真实图标并缓存到 localStorage
+    const idle = window.requestIdleCallback || (cb => setTimeout(cb, 1200));
+    idle(() => applyNavIcons());
 }
 
 function showSection(id) {
