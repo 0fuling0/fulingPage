@@ -686,17 +686,26 @@ function applyNavIcons() {
     if (!pending.length) return;
     const run = () => pending.forEach(({ img, host, fallback }) => {
         const sources = navFaviconSources(host);
-        const tryNext = i => {
-            if (i >= sources.length) return; // 所有源都失败，保持占位图标
-            probeNavFavicon(sources[i]).then(found => {
-                if (found) {
-                    img.onerror = () => { img.onerror = null; deleteNavFavicon(host); img.src = fallback; };
-                    img.src = found;
-                    saveNavFavicon(host, found);
-                } else tryNext(i + 1);
-            });
+        let attempts = 0;
+        const tryChain = () => {
+            attempts++;
+            const tryNext = i => {
+                if (i >= sources.length) {
+                    // 首轮全失败：3 秒后重试一轮；重试仍失败保持占位图标（下次访问自动重试）
+                    if (attempts === 1) setTimeout(tryChain, 3000);
+                    return;
+                }
+                probeNavFavicon(sources[i]).then(found => {
+                    if (found) {
+                        img.onerror = () => { img.onerror = null; deleteNavFavicon(host); img.src = fallback; };
+                        img.src = found;
+                        saveNavFavicon(host, found);
+                    } else tryNext(i + 1);
+                });
+            };
+            tryNext(0);
         };
-        tryNext(0);
+        tryChain();
     });
     (window.requestIdleCallback || (cb => setTimeout(cb, 800)))(run);
 }
