@@ -339,7 +339,7 @@ header:hover .header-indicator { opacity: 1; }
    Main Content
    ======================================== */
 
-main { background-color: transparent; column-count: 3; column-gap: 28px; min-height: 0; }
+main { background-color: transparent; column-count: 3; column-gap: 28px; min-height: 0; flex: 1 1 auto; }
 main:has(.navigation-view:not([style*="display: none"])) { height: auto; }
 main.container { margin-top: 20px; margin-bottom: 20px; }
 
@@ -357,10 +357,6 @@ footer {
     backdrop-filter: blur(var(--blur-amount-lg)); -webkit-backdrop-filter: blur(var(--blur-amount-lg));
     border-bottom: none; transition: var(--transition-normal);
 }
-
-/* 主页卡片挂载前隐藏页脚，避免其被推离视口产生 CLS（body.app-ready 后显示） */
-#footer-app { visibility: hidden; }
-body.app-ready #footer-app { visibility: visible; }
 
 html.dark-mode footer { background: var(--footer-background); }
 footer:hover { box-shadow: var(--glass-shadow-lg); }

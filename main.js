@@ -1238,16 +1238,7 @@ function renderHomepageCards(cards) {
                 const runtime = this.cards.find(card => card.type === 'website-info');
                 if (runtime?.showRuntime && window.siteConfig?.siteInfo?.startDate)
                     updateRuntimeInfo(window.siteConfig.siteInfo.startDate);
-                const comments = this.cards.find(card => card.type === 'comments');
-                if (comments?.settings) {
-                    const init = () => {
-                        if (!window.twikoo) return;
-                        twikoo.init({ envId: comments.settings.envId, el: '#tcomment' });
-                        patchTwikooA11y();
-                        observeTwikooA11y();
-                    };
-                    (twikooReady || Promise.resolve()).then(init, init);
-                }
+                setupLazyCardObserver(window.siteConfig);
             });
         },
         template: `
@@ -1485,7 +1476,6 @@ const LAZY_LIBS = {
     aplayer: 'https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js',
     meting: 'https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js'
 };
-let twikooReady = null, playerReady = null;
 
 function loadScript(src) {
     return new Promise((resolve, reject) => {
@@ -1508,20 +1498,65 @@ function loadStylesheet(href) {
     });
 }
 
-function initLazyThirdParty(config) {
-    const cards = config.homepage?.cards || [];
-    const enabled = type => cards.some(card => card.type === type && card.enabled !== false);
-    if (enabled('comments')) {
-        twikooReady = loadScript(LAZY_LIBS.twikoo);
-    }
-    if (enabled('music')) {
-        // APlayer 样式 → APlayer → Meting 顺序加载；Meting 定义自定义元素后会自动升级页面中已有的 <meting-js>
-        playerReady = loadStylesheet(LAZY_LIBS.aplayerCss)
-            .then(() => loadScript(LAZY_LIBS.aplayer))
-            .then(() => loadScript(LAZY_LIBS.meting))
-            .catch(() => {});
-        playerReady.then(() => { patchAplayerA11y(); observeAplayerA11y(); });
-    }
+let twikooReadyResolve, playerReadyResolve;
+const twikooReady = new Promise(res => { twikooReadyResolve = res; });
+const playerReady = new Promise(res => { playerReadyResolve = res; });
+let musicLoaded = false, commentsLoaded = false, cardObserver = null;
+
+function loadComments() {
+    if (commentsLoaded) return Promise.resolve();
+    commentsLoaded = true;
+    return loadScript(LAZY_LIBS.twikoo).then(twikooReadyResolve).catch(() => {});
+}
+
+function loadMusicPlayer() {
+    if (musicLoaded) return Promise.resolve();
+    musicLoaded = true;
+    // APlayer 样式 → APlayer → Meting 顺序加载；Meting 定义自定义元素后会自动升级页面中已有的 <meting-js>
+    return loadStylesheet(LAZY_LIBS.aplayerCss)
+        .then(() => loadScript(LAZY_LIBS.aplayer))
+        .then(() => loadScript(LAZY_LIBS.meting))
+        .then(playerReadyResolve)
+        .catch(() => {});
+}
+
+/* 音乐/评论卡片接近视口（rootMargin 600px）时才加载对应脚本，未接近不下载不执行 */
+function setupLazyCardObserver(config) {
+    if (cardObserver || !('IntersectionObserver' in window)) return;
+    const enabled = type => (config.homepage?.cards || []).some(card => card.type === type && card.enabled !== false);
+    if (!enabled('music') && !enabled('comments')) return;
+    const commentsSettings = (config.homepage?.cards || []).find(card => card.type === 'comments')?.settings || null;
+    cardObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            cardObserver.unobserve(entry.target);
+            const type = entry.target.dataset.lazyType;
+            if (type === 'music') {
+                loadMusicPlayer().then(() => patchAplayerA11y());
+            } else if (type === 'comments') {
+                loadComments().then(() => {
+                    if (window.twikoo && commentsSettings) twikoo.init({ envId: commentsSettings.envId, el: '#tcomment' });
+                    patchTwikooA11y();
+                    observeTwikooA11y();
+                }, () => {});
+            }
+        });
+    }, { rootMargin: '600px 0px' });
+    document.querySelectorAll('.card.music, .card.comments').forEach(el => {
+        el.dataset.lazyType = el.classList.contains('music') ? 'music' : 'comments';
+        cardObserver.observe(el);
+    // 兜底：渲染器节流等导致 IO 不触发时，8 秒后强制加载，保证功能可用
+    setTimeout(() => {
+        if (enabled('music')) loadMusicPlayer().then(() => patchAplayerA11y());
+        if (enabled('comments')) {
+            loadComments().then(() => {
+                if (window.twikoo && commentsSettings) twikoo.init({ envId: commentsSettings.envId, el: '#tcomment' });
+                patchTwikooA11y();
+                observeTwikooA11y();
+            }, () => {});
+        }
+    }, 8000);
+    });
 }
 
 /* Twikoo 渲染的输入框与图标链接缺少可访问名，补齐以满足无障碍审计；
@@ -1620,7 +1655,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderFooterApp(config);
         initBackgroundImage(config.backgroundImages);
         initAnimation();
-        initLazyThirdParty(config);
         if (config.carousel?.images) {
             setCarouselImages(config.carousel.images);
             setAutoSlideInterval(config.carousel.interval || 10000);
