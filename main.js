@@ -235,7 +235,7 @@ async function switchBg(index, animate = true, attempted = new Set()) {
     const nextSrc = bgState.images[(index + 1) % bgState.images.length];
     const idle = window.requestIdleCallback || (cb => setTimeout(cb, 200));
     idle(() => preloadImage(nextSrc));
-    try { localStorage.setItem('bgIndex', index); } catch {}
+
 }
 
 function startBgAutoPlay() { stopBgAutoPlay(); if (bgState.images.length > 1) bgState.timer = setInterval(() => switchBg((bgState.currentIndex + 1) % bgState.images.length), bgState.interval); }
@@ -247,7 +247,8 @@ function initBackgroundImage(config) {
     bgState.images = config.images;
     bgState.interval = config.interval || 30000;
     bgState.apiUrls = new Set(config.api || []);
-    try { bgState.currentIndex = (parseInt(localStorage.getItem('bgIndex')) || 0) % bgState.images.length; } catch { bgState.currentIndex = 0; }
+    // 首屏固定使用本地第一张（快速且稳定），返回访客的 LCP 不再依赖远程随机 API 图
+    bgState.currentIndex = 0;
     document.body.style.backgroundImage = 'none';
     createLayers();
     initBgFilter();
@@ -259,7 +260,7 @@ function initBackgroundImage(config) {
 }
 
 /* ===== Carousel ===== */
-let carouselIdx = 0, carouselImages = [], carouselAutoIv, carouselFirstLoad = true, carouselTransitioning = false;
+let carouselIdx = 0, carouselImages = [], carouselAutoIv, carouselIntervalMs = 10000, carouselFirstLoad = true, carouselTransitioning = false;
 let carouselEls = { img: null, container: null, indicators: null };
 const carouselCache = new Map();
 
@@ -306,7 +307,7 @@ function showSlide(i, dir = 0) {
 
 function carouselNext() { if (carouselImages.length > 1 && !carouselTransitioning) showSlide(carouselIdx + 1, 1); }
 function carouselPrev() { if (carouselImages.length > 1 && !carouselTransitioning) showSlide(carouselIdx - 1, -1); }
-function startCarouselAuto() { stopCarouselAuto(); if (carouselImages.length > 1) carouselAutoIv = setInterval(carouselNext, 10000); }
+function startCarouselAuto() { stopCarouselAuto(); if (carouselImages.length > 1) carouselAutoIv = setInterval(carouselNext, carouselIntervalMs); }
 function stopCarouselAuto() { if (carouselAutoIv) { clearInterval(carouselAutoIv); carouselAutoIv = null; } }
 
 function initCarouselIndicators() {
@@ -360,7 +361,7 @@ function initCarousel() {
 }
 
 function setCarouselImages(imgs) { carouselFirstLoad = true; carouselIdx = 0; carouselImages = imgs || []; }
-function setAutoSlideInterval(ms) { stopCarouselAuto(); if (carouselImages.length > 1 && ms > 0) carouselAutoIv = setInterval(carouselNext, ms); }
+function setAutoSlideInterval(ms) { carouselIntervalMs = ms > 0 ? ms : 10000; stopCarouselAuto(); if (carouselImages.length > 1) carouselAutoIv = setInterval(carouselNext, carouselIntervalMs); }
 function resetCarousel() { carouselFirstLoad = true; carouselIdx = 0; carouselTransitioning = false; setTimeout(initCarousel, 100); }
 
 /* ===== Clock & Jinrishici (今日诗词) ===== */
@@ -464,6 +465,15 @@ function initJinrishici() {
     getJinrishici();
     if (jinrishiciTimer) clearInterval(jinrishiciTimer);
     jinrishiciTimer = setInterval(getJinrishici, window.siteConfig?.jinrishici?.interval || 15000);
+}
+
+// 页面不可见时暂停诗词轮询，恢复时重启
+function handleJinrishiciVisibility() {
+    if (document.hidden) {
+        if (jinrishiciTimer) { clearInterval(jinrishiciTimer); jinrishiciTimer = null; }
+    } else if (!jinrishiciTimer) {
+        initJinrishici();
+    }
 }
 
 /* ===== Dark Mode & Header ===== */
@@ -821,7 +831,7 @@ function showSection(id) {
     if (np) np.style.display = section === 'navpage' ? 'block' : 'none';
     if (navHeaderH1) {
         const c = window.siteConfig?.header;
-        navHeaderH1.textContent = section === 'navpage' ? (c?.navTitle || 'Navigation') : (c?.title || 'Homepage');
+        if (!navigationApp) navHeaderH1.textContent = section === 'navpage' ? (c?.navTitle || 'Navigation') : (c?.title || 'Homepage');
     }
     if (mainEl) mainEl.style.columnCount = section === 'navpage' ? '1' : '';
     updateNavActive(section);
@@ -1167,7 +1177,7 @@ function codeAnimate(ts) {
 
 function startCodeRain() {
     if (currentAnim !== 'code') return;
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (prefersReducedMotion()) return;
     createCodeCanvas();
     codeCanvas.style.display = '';
     refreshCodeColor();
@@ -1464,10 +1474,6 @@ function renderLoadingApp() {
     app.mount(mount);
 }
 
-function dismissLoading() {
-    const el = document.querySelector('.loading-container');
-    if (el) el.classList.add('fade-out');
-}
 
 /* ===== Lazy third-party libs (依 config 按需加载，未启用的组件不下载) ===== */
 const LAZY_LIBS = {
@@ -1526,37 +1532,34 @@ function setupLazyCardObserver(config) {
     const enabled = type => (config.homepage?.cards || []).some(card => card.type === type && card.enabled !== false);
     if (!enabled('music') && !enabled('comments')) return;
     const commentsSettings = (config.homepage?.cards || []).find(card => card.type === 'comments')?.settings || null;
+    let twikooInitDone = false;
+    const initComments = () => {
+        if (twikooInitDone || !window.twikoo || !commentsSettings) return;
+        twikooInitDone = true;
+        twikoo.init({ envId: commentsSettings.envId, el: '#tcomment' });
+        patchTwikooA11y();
+        observeTwikooA11y();
+    };
+    const trigger = type => {
+        if (type === 'music') loadMusicPlayer().then(() => { patchAplayerA11y(); observeAplayerA11y(); });
+        else if (type === 'comments') loadComments().then(initComments, () => {});
+    };
     cardObserver = new IntersectionObserver(entries => {
         entries.forEach(entry => {
             if (!entry.isIntersecting) return;
             cardObserver.unobserve(entry.target);
-            const type = entry.target.dataset.lazyType;
-            if (type === 'music') {
-                loadMusicPlayer().then(() => patchAplayerA11y());
-            } else if (type === 'comments') {
-                loadComments().then(() => {
-                    if (window.twikoo && commentsSettings) twikoo.init({ envId: commentsSettings.envId, el: '#tcomment' });
-                    patchTwikooA11y();
-                    observeTwikooA11y();
-                }, () => {});
-            }
+            trigger(entry.target.dataset.lazyType);
         });
     }, { rootMargin: '600px 0px' });
     document.querySelectorAll('.card.music, .card.comments').forEach(el => {
         el.dataset.lazyType = el.classList.contains('music') ? 'music' : 'comments';
         cardObserver.observe(el);
-    // 兜底：渲染器节流等导致 IO 不触发时，8 秒后强制加载，保证功能可用
-    setTimeout(() => {
-        if (enabled('music')) loadMusicPlayer().then(() => patchAplayerA11y());
-        if (enabled('comments')) {
-            loadComments().then(() => {
-                if (window.twikoo && commentsSettings) twikoo.init({ envId: commentsSettings.envId, el: '#tcomment' });
-                patchTwikooA11y();
-                observeTwikooA11y();
-            }, () => {});
-        }
-    }, 8000);
     });
+    // 兜底：渲染器节流等导致 IO 不触发时，8 秒后强制加载（只注册一次，Twikoo 幂等）
+    setTimeout(() => {
+        if (enabled('music')) loadMusicPlayer().then(() => { patchAplayerA11y(); observeAplayerA11y(); });
+        if (enabled('comments')) loadComments().then(initComments, () => {});
+    }, 8000);
 }
 
 /* Twikoo 渲染的输入框与图标链接缺少可访问名，补齐以满足无障碍审计；
@@ -1639,7 +1642,6 @@ Object.assign(window, {
 
 /* ===== Init ===== */
 initDarkMode();
-window.addEventListener('beforeunload', disposeVueApps, { once: true });
 
 document.addEventListener('DOMContentLoaded', () => {
     renderLoadingApp();
@@ -1648,6 +1650,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loadConfigs().then(([config, navData]) => {
         if (!config || !navData) return;
         window.siteConfig = config;
+        // jinrishici 配置实际位于 clock 卡片内，提升到顶层以对齐读取路径
+        const clockCard = (config.homepage?.cards || []).find(card => card.type === 'clock');
+        if (clockCard?.jinrishici && !window.siteConfig.jinrishici) window.siteConfig.jinrishici = clockCard.jinrishici;
         initSiteWithConfig(config);
         initSiteTheme(config.theme?.default);
         initHeaderAndFooter(config);
@@ -1655,17 +1660,16 @@ document.addEventListener('DOMContentLoaded', () => {
         renderFooterApp(config);
         initBackgroundImage(config.backgroundImages);
         initAnimation();
-        if (config.carousel?.images) {
-            setCarouselImages(config.carousel.images);
-            setAutoSlideInterval(config.carousel.interval || 10000);
-        }
         if (config.homepage?.cards) renderHomepageCards(config.homepage.cards);
         initJinrishici();
+        if (!window.__jinrishiciVisHooked) {
+            window.__jinrishiciVisHooked = true;
+            document.addEventListener('visibilitychange', handleJinrishiciVisibility, { passive: true });
+        }
         if (navData.cards) renderNavigationApp(navData.cards);
         initNavigation();
     }).catch(error => {
         console.error('Unable to load site configuration.', error);
         markAppReady();
-        dismissLoading();
     });
 });

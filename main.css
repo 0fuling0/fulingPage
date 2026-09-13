@@ -196,11 +196,6 @@ header::after, footer::after, .card::after {
     padding: 1px; opacity: 0.24; transition: opacity var(--transition-normal); pointer-events: none;
 }
 
-html.dark-mode header::after, html.dark-mode footer::after, html.dark-mode .card::after {
-    background:
-        radial-gradient(circle at var(--glass-pointer-x) var(--glass-pointer-y), var(--glass-glow), transparent 42%),
-        linear-gradient(135deg, rgba(96,165,250,0.25) 0%, transparent 40%, transparent 60%, rgba(139,92,246,0.15) 100%);
-}
 
 /* ========================================
    Header
@@ -565,14 +560,11 @@ html.dark-mode .carousel-container {
     transition: opacity 0.4s cubic-bezier(0.4,0,0.2,1), transform 0.5s cubic-bezier(0.4,0,0.2,1), filter 0.3s ease;
 }
 
-.carousel-img.fade-out { opacity: 0; transform: scale(1.05); filter: brightness(1.2) blur(2px); }
-.carousel-img.fade-in { animation: carouselFadeIn 0.5s cubic-bezier(0.4,0,0.2,1); }
 .carousel-img.slide-out-left { opacity: 0; transform: translateX(-30%) scale(0.95); }
 .carousel-img.slide-out-right { opacity: 0; transform: translateX(30%) scale(0.95); }
 .carousel-img.slide-in-right { animation: slideInRight 0.5s cubic-bezier(0.4,0,0.2,1); }
 .carousel-img.slide-in-left { animation: slideInLeft 0.5s cubic-bezier(0.4,0,0.2,1); }
 
-@keyframes carouselFadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 @keyframes slideInRight { from { opacity: 0; transform: translateX(20%) scale(0.98); } to { opacity: 1; transform: translateX(0) scale(1); } }
 @keyframes slideInLeft { from { opacity: 0; transform: translateX(-20%) scale(0.98); } to { opacity: 1; transform: translateX(0) scale(1); } }
 
@@ -632,7 +624,6 @@ html.dark-mode .carousel-dot:not(.active):hover { background: rgba(255,255,255,0
    Music
    ======================================== */
 
-html.dark-mode .card.music iframe { filter: brightness(0.6); }
 .aplayer { height: 100% !important; margin: -20px !important; border-radius: 12px !important; box-shadow: none !important; }
 /* APlayer 内部小按钮补足可点击目标尺寸 */
 .aplayer-time button { min-width: 24px; min-height: 24px; }
@@ -854,9 +845,14 @@ html.dark-mode .shadow { background: rgba(96,165,250,0.35); filter: blur(3px); }
 
 .tk-footer { display: none !important; }
 
-/* 预留异步组件高度，避免加载后撑开列布局产生 CLS */
+/* 预留异步组件高度，避免加载后撑开列布局产生 CLS；歌单过长时列表内部滚动 */
 #tcomment { min-height: 340px; }
 #aplayer { min-height: 340px; }
+/* 歌单过长时列表内部滚动（输入区/播放控制不受影响） */
+/* 歌单列表常开并内部滚动（!important 压过 APlayer 的折叠/展开内联状态，避免时序差异） */
+.aplayer-list { max-height: 250px !important; overflow-y: auto !important; }
+/* 评论区列表过长时内部滚动（输入框固定在上方） */
+.tk-comments-container { max-height: 420px; overflow-y: auto; }
 
 .el-button {
     border-radius: var(--card-radius-sm) !important; background: var(--button-gradient) !important;
@@ -938,7 +934,6 @@ html.dark-mode .el-button:hover { box-shadow: 0 4px 15px var(--glow-color), 0 2p
     .header-nav { flex: 1; justify-content: center; gap: 4px; }
     .header-nav a { padding: 7px 10px; font-size: 0.85rem; gap: 0; border-radius: var(--card-radius-sm); flex: 1; justify-content: center; min-width: 0; }
     .header-nav a i { font-size: 1rem; }
-    .header-nav a span { display: none; }
     .header-nav a.active { box-shadow: 0 2px 8px var(--glow-color); }
     .header-dark-toggle { padding: 8px 10px; }
     .header-dark-toggle i { font-size: 0.9rem; }
