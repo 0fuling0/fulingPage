@@ -231,6 +231,7 @@ async function switchBg(index, animate = true, attempted = new Set()) {
     }
     bgState.currentIndex = index;
     bgState.isTransitioning = false;
+    try { localStorage.setItem('bgIndex', index); } catch {}
     // 空闲时段再预加载下一张，避免与关键资源抢占带宽
     const nextSrc = bgState.images[(index + 1) % bgState.images.length];
     const idle = window.requestIdleCallback || (cb => setTimeout(cb, 200));
@@ -247,12 +248,21 @@ function initBackgroundImage(config) {
     bgState.images = config.images;
     bgState.interval = config.interval || 30000;
     bgState.apiUrls = new Set(config.api || []);
-    // 首屏固定使用本地第一张（快速且稳定），返回访客的 LCP 不再依赖远程随机 API 图
-    bgState.currentIndex = 0;
-    document.body.style.backgroundImage = 'none';
+    // 恢复上次访问的背景：立即绘制（原始地址优先命中 HTTP 缓存），不等待预加载
+    let start = 0;
+    try { start = (parseInt(localStorage.getItem('bgIndex')) || 0) % bgState.images.length; } catch { start = 0; }
+    bgState.currentIndex = start;
     createLayers();
     initBgFilter();
-    switchBg(bgState.currentIndex, false);
+    const restoreSrc = bgState.images[start];
+    topLayer.style.backgroundImage = `url('${restoreSrc}')`;
+    topLayer.style.transform = 'scale(1)';
+    topLayer.style.opacity = '1';
+    bgState.currentIndex = start;
+    // 静默校验：恢复失败则经故障转移换到可用源
+    const probe = new Image();
+    probe.onerror = () => { if (bgState.currentIndex === start) switchBg(start + 1, false); };
+    probe.src = restoreSrc;
     startBgAutoPlay();
     if (bgVisibilityHandler) document.removeEventListener('visibilitychange', bgVisibilityHandler);
     bgVisibilityHandler = () => document.hidden ? stopBgAutoPlay() : startBgAutoPlay();
@@ -261,22 +271,25 @@ function initBackgroundImage(config) {
 
 /* ===== Carousel ===== */
 let carouselIdx = 0, carouselImages = [], carouselAutoIv, carouselIntervalMs = 10000, carouselFirstLoad = true, carouselTransitioning = false;
-let carouselEls = { img: null, container: null, indicators: null };
+let carouselEls = { img: null, underlay: null, container: null, indicators: null };
 const carouselCache = new Map();
 
+// 预加载并预解码（Promise 去重），切换时零解码卡顿
 function carouselPreload(src) {
-    if (carouselCache.has(src)) return Promise.resolve();
-    return new Promise((res, rej) => {
+    if (carouselCache.has(src)) return carouselCache.get(src);
+    const p = new Promise((res, rej) => {
         const img = new Image();
-        img.onload = () => { carouselCache.set(src, img); res(); };
+        img.decoding = 'async';
+        img.onload = () => { carouselCache.set(src, img); if (img.decode) { img.decode().then(() => res(img), () => res(img)); } else res(img); };
         img.onerror = rej;
         img.src = src;
     });
+    carouselCache.set(src, p);
+    return p;
 }
 
 function clearCarouselAnim(img) {
-    const cl = img.classList;
-    cl.remove('fade-out', 'fade-in', 'slide-out-left', 'slide-out-right', 'slide-in-right', 'slide-in-left');
+    img.classList.remove('fade-out', 'fade-in');
 }
 
 function updateCarouselDots() {
@@ -290,25 +303,50 @@ function showSlide(i, dir = 0) {
     i = ((i % carouselImages.length) + carouselImages.length) % carouselImages.length;
     const img = carouselEls.img || document.querySelector('.carousel-img');
     if (!img) return;
-    const old = carouselIdx; carouselIdx = i;
     if (carouselFirstLoad) { img.src = carouselImages[i]; img.style.opacity = 1; carouselFirstLoad = false; updateCarouselDots(); return; }
-    if (old === i) return;
+    if (i === carouselIdx) return;
     carouselTransitioning = true;
-    const d = dir || (i > old ? 1 : -1);
-    carouselPreload(carouselImages[i]).then(() => {
-        clearCarouselAnim(img); img.classList.add(d > 0 ? 'slide-out-left' : 'slide-out-right');
+    const src = carouselImages[i];
+    // 复用背景逻辑：预加载+预解码后交叉淡化 + 微缩放（合成器过渡）
+    carouselPreload(src).then(() => {
+        if (prefersReducedMotion()) {
+            img.src = src; carouselIdx = i; updateCarouselDots();
+            clearCarouselAnim(img); carouselTransitioning = false;
+            return;
+        }
+        img.classList.add('fade-out'); // 淡出 + 微放大
         setTimeout(() => {
-            img.src = carouselImages[i]; clearCarouselAnim(img); img.classList.add(d > 0 ? 'slide-in-right' : 'slide-in-left');
-            setTimeout(() => { clearCarouselAnim(img); carouselTransitioning = false; }, 500);
-        }, 300);
+            img.src = src;
+            img.classList.remove('fade-out');
+            img.classList.add('fade-in'); // 淡入归位
+            setTimeout(() => { img.classList.remove('fade-in'); carouselTransitioning = false; }, 520);
+        }, 430);
+        carouselIdx = i;
+        updateCarouselDots();
     }).catch(() => { carouselTransitioning = false; });
-    updateCarouselDots();
 }
 
 function carouselNext() { if (carouselImages.length > 1 && !carouselTransitioning) showSlide(carouselIdx + 1, 1); }
 function carouselPrev() { if (carouselImages.length > 1 && !carouselTransitioning) showSlide(carouselIdx - 1, -1); }
 function startCarouselAuto() { stopCarouselAuto(); if (carouselImages.length > 1) carouselAutoIv = setInterval(carouselNext, carouselIntervalMs); }
 function stopCarouselAuto() { if (carouselAutoIv) { clearInterval(carouselAutoIv); carouselAutoIv = null; } }
+
+function resetCarousel() {
+    carouselEls.img = carouselEls.img || document.querySelector('.carousel-img:not(.underlay)');
+    carouselEls.container = carouselEls.container || document.querySelector('.carousel-container');
+    // 底层镜像：切换期间承接新图，消除透明窗口露出的灰色底
+    if (!carouselEls.underlay && carouselEls.img) {
+        const u = carouselEls.img.cloneNode(false);
+        u.classList.add('underlay');
+        u.setAttribute('aria-hidden', 'true');
+        carouselEls.img.parentNode.insertBefore(u, carouselEls.img);
+        carouselEls.underlay = u;
+    }
+    carouselEls.underlay.src = carouselEls.img.src;
+    showSlide(carouselIdx);
+    initCarouselIndicators();
+    startCarouselAuto();
+}
 
 function initCarouselIndicators() {
     if (carouselImages.length <= 1) return;
@@ -331,38 +369,6 @@ function initCarouselIndicators() {
     c.appendChild(wrap);
     carouselEls.indicators = wrap;
 }
-
-function initCarousel() {
-    if (!carouselImages.length) return;
-    carouselEls.img = document.querySelector('.carousel-img');
-    carouselEls.container = document.querySelector('.carousel-container');
-    if (!carouselEls.img) return;
-    showSlide(carouselIdx); initCarouselIndicators();
-    if (carouselImages.length > 1) startCarouselAuto();
-    if (carouselEls.container && !carouselEls.container.dataset.ev) {
-        let tx = 0;
-        carouselEls.container.addEventListener('mouseenter', stopCarouselAuto, { passive: true });
-        carouselEls.container.addEventListener('mouseleave', startCarouselAuto, { passive: true });
-        carouselEls.container.addEventListener('touchstart', e => tx = e.changedTouches[0].screenX, { passive: true });
-        carouselEls.container.addEventListener('touchend', e => {
-            const d = tx - e.changedTouches[0].screenX;
-            if (Math.abs(d) > 50) d > 0 ? carouselNext() : carouselPrev();
-        }, { passive: true });
-        carouselEls.container.dataset.ev = '1';
-    }
-    const card = document.querySelector('.carousel-card');
-    if (card && !card.dataset.ev) {
-        card.addEventListener('click', e => {
-            const btn = e.target.closest('.carousel-btn');
-            if (btn) { e.stopPropagation(); btn.classList.contains('next-btn') ? carouselNext() : carouselPrev(); }
-        });
-        card.dataset.ev = '1';
-    }
-}
-
-function setCarouselImages(imgs) { carouselFirstLoad = true; carouselIdx = 0; carouselImages = imgs || []; }
-function setAutoSlideInterval(ms) { carouselIntervalMs = ms > 0 ? ms : 10000; stopCarouselAuto(); if (carouselImages.length > 1) carouselAutoIv = setInterval(carouselNext, carouselIntervalMs); }
-function resetCarousel() { carouselFirstLoad = true; carouselIdx = 0; carouselTransitioning = false; setTimeout(initCarousel, 100); }
 
 /* ===== Clock & Jinrishici (今日诗词) ===== */
 let dateF, timeF, jinrishiciTimer, clockTimer, runtimeTimer, clockVisibilityHandler;

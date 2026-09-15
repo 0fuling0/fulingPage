@@ -65,10 +65,15 @@
             window.location.replace(directoryUrl.href);
         }
     </script>
-    <script defer src="main.js?v=20260912i"></script>
+    <script defer src="main.js?v=20260912k"></script>
 </head>
 
 <body>
+    <script>
+        /* 首帧立即绘制本地背景图，消除刷新时的无背景窗口（main.js 初始化后由背景图层接管）。
+           图片地址与 config.json backgroundImages.images[0] 保持一致。 */
+        document.body.style.background = '#10141f center / cover no-repeat url("img/ComfyUI_00122_.webp")';
+    </script>
     <div id="loading-app"></div>
     <!-- 静态 header/footer：与 Vue 模板同构，避免异步挂载时内容推移（Vue 挂载后原位替换） -->
     <header id="header-app">
