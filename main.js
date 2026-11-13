@@ -303,7 +303,11 @@ function showSlide(i, dir = 0) {
     i = ((i % carouselImages.length) + carouselImages.length) % carouselImages.length;
     const img = carouselEls.img || document.querySelector('.carousel-img');
     if (!img) return;
-    if (carouselFirstLoad) { img.src = carouselImages[i]; img.style.opacity = 1; carouselFirstLoad = false; updateCarouselDots(); return; }
+    if (carouselFirstLoad) {
+        img.src = carouselImages[i];
+        if (carouselEls.underlay) carouselEls.underlay.src = img.src;
+        img.style.opacity = 1; carouselFirstLoad = false; updateCarouselDots(); return;
+    }
     if (i === carouselIdx) return;
     carouselTransitioning = true;
     const src = carouselImages[i];
@@ -311,12 +315,15 @@ function showSlide(i, dir = 0) {
     carouselPreload(src).then(() => {
         if (prefersReducedMotion()) {
             img.src = src; carouselIdx = i; updateCarouselDots();
+            if (carouselEls.underlay) carouselEls.underlay.src = src;
             clearCarouselAnim(img); carouselTransitioning = false;
             return;
         }
         img.classList.add('fade-out'); // 淡出 + 微放大
         setTimeout(() => {
             img.src = src;
+            // 底层镜像与当前图同步，下一次淡出时不会闪回首张图
+            if (carouselEls.underlay) carouselEls.underlay.src = src;
             img.classList.remove('fade-out');
             img.classList.add('fade-in'); // 淡入归位
             setTimeout(() => { img.classList.remove('fade-in'); carouselTransitioning = false; }, 520);
@@ -331,6 +338,14 @@ function carouselPrev() { if (carouselImages.length > 1 && !carouselTransitionin
 function startCarouselAuto() { stopCarouselAuto(); if (carouselImages.length > 1) carouselAutoIv = setInterval(carouselNext, carouselIntervalMs); }
 function stopCarouselAuto() { if (carouselAutoIv) { clearInterval(carouselAutoIv); carouselAutoIv = null; } }
 
+// Vue 挂载时先写入图片列表与轮播间隔（resetCarousel 负责首次绘制和启动定时器）
+function setCarouselImages(imgs) { carouselFirstLoad = true; carouselIdx = 0; carouselImages = imgs || []; }
+function setAutoSlideInterval(ms) {
+    carouselIntervalMs = ms > 0 ? ms : 10000;
+    stopCarouselAuto();
+    if (carouselImages.length > 1) carouselAutoIv = setInterval(carouselNext, carouselIntervalMs);
+}
+
 function resetCarousel() {
     carouselEls.img = carouselEls.img || document.querySelector('.carousel-img:not(.underlay)');
     carouselEls.container = carouselEls.container || document.querySelector('.carousel-container');
@@ -342,7 +357,6 @@ function resetCarousel() {
         carouselEls.img.parentNode.insertBefore(u, carouselEls.img);
         carouselEls.underlay = u;
     }
-    carouselEls.underlay.src = carouselEls.img.src;
     showSlide(carouselIdx);
     initCarouselIndicators();
     startCarouselAuto();
@@ -622,7 +636,7 @@ function initHeaderAndFooter(config) {
 /* ===== Navigation ===== */
 let navTimer, currentCard = 1, mainEl, navHeaderH1;
 const pageState = { section: 'homepage' };
-let homepageApp, navigationApp, navigationView, footerApp, headerApp, loadingApp;
+let homepageApp, navigationApp, navigationView, footerApp, headerApp;
 
 function showCard(n) {
     const id = `card${n}`;
@@ -880,13 +894,11 @@ function disposeVueApps() {
     navigationApp?.unmount();
     footerApp?.unmount();
     headerApp?.unmount();
-    loadingApp?.unmount();
     homepageApp = null;
     navigationApp = null;
     navigationView = null;
     footerApp = null;
     headerApp = null;
-    loadingApp = null;
 }
 
 /* ===== Rain Effect (no wave/ripple interaction) ===== */
@@ -906,9 +918,11 @@ function createDrop() {
 function rainAnimate(ts) {
     if (!rainRunning) return;
     const now = ts || performance.now();
+    // 以毫秒累计判断是否达到 30fps 的绘制间隔。旧逻辑用“单帧 dt < 0.5”节流，
+    // 在 120/144Hz 高刷屏上每帧都会被跳过（且 rainLast 被提前刷新），动画会永久停在首帧。
+    if (rainLast && now - rainLast < 32) { rainAnimId = requestAnimationFrame(rainAnimate); return; }
     const dt = rainLast ? Math.min((now - rainLast) / 16.7, 3) : 1; // 帧间隔补偿（以 60fps 为基准）
     rainLast = now;
-    if (dt < 0.5) { rainAnimId = requestAnimationFrame(rainAnimate); return; } // 限 ~30fps，画布工作量减半
     const w = rainCanvas.width, h = rainCanvas.height;
     rainCtx.clearRect(0, 0, w, h);
     const ctx = rainCtx;
@@ -1023,7 +1037,7 @@ function initRainEffect(options = {}) {
         resizeTimer = setTimeout(rainResize, 100);
     }, { passive: true });
     document.addEventListener('visibilitychange', () => { if (document.hidden) stopRain(); else if (currentAnim === 'rain' && !prefersReducedMotion()) startRain(); }, { passive: true });
-    startRain();
+    if (!prefersReducedMotion()) startRain();
 }
 
 /* ===== Background Animations (雨滴 / 代码流动) ===== */
@@ -1074,33 +1088,116 @@ function initAnimation() {
     applyAnimation(getAnimation() || getAnimationDefault(), false);
 }
 
-/* ===== Code Rain（复用雨滴逻辑：等宽竖列字符匀速下落） ===== */
-const CODE_CHARS = '01ABCDEFabcdef<>{}[]()$#*+-=;:|&%@?';
+/* ===== Code Rain（Linux 常用命令竖向流动，命令取自菜鸟教程《Linux 命令大全》） ===== */
+const LINUX_COMMANDS = [
+    // 文件与目录
+    'ls', 'cd', 'pwd', 'cat', 'cp', 'mv', 'rm', 'mkdir', 'rmdir', 'touch', 'ln',
+    'find', 'locate', 'which', 'whereis', 'file', 'stat', 'tree', 'basename',
+    'dirname', 'realpath', 'chmod', 'chown', 'chgrp', 'chattr', 'lsattr', 'umask',
+    // 查看、编辑与文本处理
+    'more', 'less', 'head', 'tail', 'grep', 'egrep', 'fgrep', 'sed', 'awk',
+    'sort', 'uniq', 'wc', 'cut', 'paste', 'tr', 'diff', 'cmp', 'comm', 'nl',
+    'tac', 'rev', 'column', 'tee', 'xargs', 'split', 'csplit', 'iconv',
+    'dos2unix', 'unix2dos', 'jq', 'vi/vim', 'ed', 'ex', 'joe', 'pico', 'jed',
+    // 压缩与归档
+    'tar', 'gzip', 'gunzip', 'zip', 'unzip', 'bzip2', 'bunzip2', '7z',
+    'zipinfo', 'cpio', 'ar',
+    // 磁盘与文件系统
+    'df', 'du', 'mount', 'umount', 'lsblk', 'blkid', 'fdisk', 'parted',
+    'mkfs', 'fsck', 'e2fsck', 'sync', 'swapon', 'swapoff', 'dd', 'quota',
+    'lsusb', 'lspci',
+    // 系统与进程
+    'ps', 'top', 'htop', 'pstree', 'pgrep', 'kill', 'killall', 'pkill',
+    'nice', 'renice', 'free', 'uptime', 'vmstat', 'iostat', 'mpstat', 'sar',
+    'iotop', 'lsof', 'strace', 'ltrace', 'watch', 'timeout', 'nohup', 'time',
+    'dmesg', 'journalctl', 'systemctl', 'service', 'crontab', 'at', 'batch',
+    'lsmod', 'insmod', 'rmmod', 'modprobe', 'modinfo', 'depmod',
+    'uname', 'hostname', 'date', 'cal', 'shutdown', 'reboot', 'halt', 'poweroff',
+    // 用户与权限
+    'whoami', 'who', 'w', 'id', 'last', 'lastb', 'finger', 'whois', 'useradd',
+    'userdel', 'usermod', 'groupadd', 'groupdel', 'groupmod', 'passwd', 'chsh',
+    'su', 'sudo', 'gpasswd', 'newgrp',
+    // Shell
+    'echo', 'printf', 'test', 'true', 'false', 'source', 'alias', 'unalias',
+    'export', 'env', 'set', 'unset', 'eval', 'let', 'declare', 'ulimit',
+    'history', 'jobs', 'bg', 'fg', 'clear', 'reset', 'exit', 'logout', 'sleep',
+    'type', 'read',
+    // 网络
+    'ip', 'ifconfig', 'ping', 'traceroute', 'mtr', 'netstat', 'ss', 'nmap',
+    'nc', 'tcpdump', 'curl', 'wget', 'dig', 'nslookup', 'route', 'ifup',
+    'ifdown', 'nmcli', 'ssh', 'scp', 'sftp', 'telnet', 'ftp', 'rsync',
+    'iperf', 'smbclient', 'nethogs',
+    // 软件与容器
+    'apt', 'apt-get', 'yum', 'dnf', 'pacman', 'snap', 'zypper', 'flatpak',
+    'rpm', 'docker', 'podman', 'kubectl', 'git', 'svn', 'openssl', 'gpg',
+    'screen', 'tmux', 'auditd', 'sestatus', 'setenforce'
+];
 let codeCanvas, codeCtx, codeDrops = [], codeAnimId, codeRunning = false;
 let codeVisHandler = null, codeThemeHandler = null;
+let codeW = 0, codeH = 0;    // 逻辑尺寸（CSS px）；画布实际像素按 DPR 放大，保证文字清晰
 const codeCfg = {
     fontSize: 15,
-    dropCount: 80,   // 列数，对应雨滴 dropCount
-    dropSpeed: 8,    // 下落速度 px/帧，对应雨滴 dropSpeed
-    trail: 12,       // 每列尾迹字符数，对应雨滴 length
+    dropCount: 80,   // 最多列数，实际列数随窗口宽度自适应
+    dropSpeed: 4.5,  // 下落速度 px/帧（约 135 px/s，整条命令能看清）
     color: '#4ade80',
     headColor: '#ffffff'
 };
+let lastCommand = '';
 
-function codeResize() { if (codeCanvas) { codeCanvas.width = innerWidth; codeCanvas.height = innerHeight; } }
-function randomCodeChar() { return CODE_CHARS[(Math.random() * CODE_CHARS.length) | 0]; }
-function createCodeDrop(initial) {
-    const w = codeCanvas ? codeCanvas.width : innerWidth;
-    const h = codeCanvas ? codeCanvas.height : innerHeight;
-    const chars = new Array(codeCfg.trail);
-    for (let i = 0; i < chars.length; i++) chars[i] = randomCodeChar();
+// 随机取一条命令，尽量避免与上一条重复
+function randomCodeCommand() {
+    if (!LINUX_COMMANDS.length) return 'ls';
+    let cmd = lastCommand;
+    for (let i = 0; i < 8 && cmd === lastCommand; i++) {
+        cmd = LINUX_COMMANDS[(Math.random() * LINUX_COMMANDS.length) | 0];
+    }
+    lastCommand = cmd;
+    return cmd;
+}
+
+function codeColumnWidth() { return Math.max(codeCfg.fontSize * 1.4, 18); }
+function codeColumnCount() {
+    const w = codeW || innerWidth;
+    return Math.max(1, Math.floor(w / codeColumnWidth()));
+}
+
+function createCodeDrop(initial, col = 0) {
+    const h = codeH || innerHeight;
+    // 头在下、尾在上：倒序存放后，整列自上而下正好是命令原文
+    const chars = randomCodeCommand().split('').reverse();
     return {
-        x: Math.random() * w,
-        y: initial ? Math.random() * h - h : -chars.length * codeCfg.fontSize,
-        speed: (codeCfg.dropSpeed + Math.random() * 5) * (2 / 3),
-        opacity: 0.35 + Math.random() * 0.45,
+        col,
+        x: 0,
+        y: initial ? Math.random() * h : -chars.length * codeCfg.fontSize,
+        speed: codeCfg.dropSpeed + Math.random() * 2,
+        opacity: 0.85 + Math.random() * 0.15,
         chars
     };
+}
+
+// 每列一条命令；窗口变化时按可用列数增减，并让列均匀铺满整个画布
+function syncCodeDrops() {
+    const w = codeW || innerWidth;
+    const target = Math.min(codeCfg.dropCount, codeColumnCount());
+    while (codeDrops.length > target) codeDrops.pop();
+    while (codeDrops.length < target) codeDrops.push(createCodeDrop(true, codeDrops.length));
+    const spacing = w / target;
+    const pad = Math.max(2, (spacing - codeCfg.fontSize) / 2);
+    for (let i = 0; i < codeDrops.length; i++) {
+        codeDrops[i].col = i;
+        codeDrops[i].x = i * spacing + pad;
+    }
+}
+
+function codeResize() {
+    if (!codeCanvas) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    codeW = innerWidth;
+    codeH = innerHeight;
+    codeCanvas.width = Math.round(codeW * dpr);
+    codeCanvas.height = Math.round(codeH * dpr);
+    if (codeCtx) codeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    syncCodeDrops();
 }
 
 // 主题色只在启动 / 主题切换时读取一次，避免每帧 getComputedStyle
@@ -1119,7 +1216,6 @@ function createCodeCanvas() {
     document.body.insertBefore(codeCanvas, document.body.firstChild);
     codeCtx = codeCanvas.getContext('2d');
     codeResize();
-    for (let i = 0; i < codeCfg.dropCount; i++) codeDrops.push(createCodeDrop(true));
     let resizeTimer;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
@@ -1143,11 +1239,14 @@ function createCodeCanvas() {
 let codeLast = 0;
 function codeAnimate(ts) {
     if (!codeRunning) return;
+    // 视口/DPR 与画布不一致时立即重算，避免画布被 CSS 拉伸导致文字变大变稀
+    if (innerWidth !== codeW || innerHeight !== codeH) codeResize();
     const now = ts || performance.now();
+    // 同雨滴：按毫秒累计到 ~30fps 才绘制，避免高刷新率屏幕永远进不了绘制分支
+    if (codeLast && now - codeLast < 32) { codeAnimId = requestAnimationFrame(codeAnimate); return; }
     const dt = codeLast ? Math.min((now - codeLast) / 16.7, 3) : 1; // 帧间隔补偿（以 60fps 为基准）
     codeLast = now;
-    if (dt < 0.5) { codeAnimId = requestAnimationFrame(codeAnimate); return; } // 限 ~30fps，绘制量减半
-    const w = codeCanvas.width, h = codeCanvas.height;
+    const w = codeW, h = codeH;
     codeCtx.clearRect(0, 0, w, h);
     const ctx = codeCtx, fs = codeCfg.fontSize;
     ctx.font = fs + 'px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
@@ -1155,18 +1254,18 @@ function codeAnimate(ts) {
     for (let i = 0, len = codeDrops.length; i < len; i++) {
         const d = codeDrops[i];
         d.y += d.speed * dt;
-        // 落出屏幕后回到顶部（同雨滴重置逻辑）
-        if (d.y - d.chars.length * fs > h) Object.assign(d, createCodeDrop(false));
-        // 头部换新字符，尾迹偶尔闪烁其一
-        d.chars[0] = randomCodeChar();
-        if (Math.random() < 0.1) d.chars[(Math.random() * d.chars.length) | 0] = randomCodeChar();
+        // 整条命令落出屏幕后回到顶部，并换一条新命令（保持所在列不变）
+        if (d.y - d.chars.length * fs > h) {
+            const fresh = createCodeDrop(false, d.col);
+            d.y = fresh.y; d.speed = fresh.speed; d.opacity = fresh.opacity; d.chars = fresh.chars;
+        }
     }
-    // 尾迹：主题色，按行衰减（两次 fillStyle 切换即可）
+    // 尾迹：整条命令都要看得见，只做由尾到头的轻微明暗过渡（不淡成看不见的单字）
     ctx.fillStyle = codeCfg.color;
     for (let i = 0, len = codeDrops.length; i < len; i++) {
-        const d = codeDrops[i], n = d.chars.length;
+        const d = codeDrops[i], n = d.chars.length, last = Math.max(1, n - 1);
         for (let j = 1; j < n; j++) {
-            ctx.globalAlpha = d.opacity * (1 - j / n);
+            ctx.globalAlpha = d.opacity * (1 - 0.35 * (j / last));
             ctx.fillText(d.chars[j], d.x, d.y - j * fs);
         }
     }
@@ -1240,10 +1339,15 @@ function renderHomepageCards(cards) {
         },
         methods: { carouselPrev, carouselNext },
         mounted() {
-            const carousel = this.cards.find(card => card.type === 'carousel');
-            if (carousel) {
-                setCarouselImages(carousel.images);
-                setAutoSlideInterval(carousel.interval || 10000);
+            // 轮播图初始化失败不应阻断后续的时钟/统计等首屏初始化
+            try {
+                const carousel = this.cards.find(card => card.type === 'carousel');
+                if (carousel) {
+                    setCarouselImages(carousel.images);
+                    setAutoSlideInterval(carousel.interval || 10000);
+                }
+            } catch (error) {
+                console.warn('Carousel init failed.', error);
             }
             this.$nextTick(() => {
                 markAppReady();
@@ -1356,15 +1460,11 @@ function renderHomepageCards(cards) {
 }
 
 function refreshBusuanzi() {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/penndu@16.0.0/bsz.js'; // jsdelivr 域名证书有效，避免控制台证书错误
-    script.defer = true;
-    script.setAttribute('data-prefix', 'busuanzi_value');
-    document.body.appendChild(script);
-    script.onload = () => setTimeout(() => {
+    // 通过镜像链加载，避免 cdn.jsdelivr.net 被阻断时访问量统计永久停留在“加载中”
+    loadAsset('js', 'penndu@16.0.0/bsz.js', 8000, { 'data-prefix': 'busuanzi_value' }).then(() => setTimeout(() => {
         const ids = ['busuanzi_value_site_pv', 'busuanzi_value_site_uv'];
         for (let i = 0; i < ids.length; i++) { const el = document.getElementById(ids[i]); if (el) el.style.display = ''; }
-    }, 1000);
+    }, 1000)).catch(() => {});
 }
 
 function renderFooterApp(config) {
@@ -1435,80 +1535,67 @@ function renderFooterApp(config) {
     app.mount(mount);
 }
 
-/* ===== Loading Component ===== */
-/* 加载动画持续到内容就绪（app-ready 事件）为止，4 秒兜底强制淡出 */
+/* ===== Loading Screen ===== */
+/* 加载动画由 index.html 静态渲染（不依赖 Vue/CDN）；内容就绪（app-ready）后淡出，
+   4 秒兜底强制淡出，任何外部脚本失败都不会永久遮挡页面 */
 function markAppReady() {
     document.body.classList.add('app-ready');
     document.dispatchEvent(new CustomEvent('app-ready'));
 }
 
-function renderLoadingApp() {
+let loadingDismissed = false;
+function dismissLoadingScreen() {
+    if (loadingDismissed) return;
+    loadingDismissed = true;
     const mount = document.getElementById('loading-app');
-    if (!mount || !window.Vue) return;
-    const app = Vue.createApp({
-        data: () => ({ active: true, done: false }),
-        methods: {
-            dismiss() {
-                if (this.done) return;
-                this.done = true;
-                this.active = false;
-                this.removeTimer = setTimeout(() => {
-                    app.unmount();
-                    loadingApp = null;
-                }, 500);
-            }
-        },
-        mounted() {
-            document.addEventListener('app-ready', this.dismiss, { once: true });
-            this.dismissTimer = setTimeout(() => this.dismiss(), 4000); // 兜底：资源异常时不永久遮挡
-        },
-        beforeUnmount() {
-            document.removeEventListener('app-ready', this.dismiss);
-            clearTimeout(this.dismissTimer);
-            clearTimeout(this.removeTimer);
-        },
-        template: `
-            <div class="loading-container" :class="{ 'fade-out': !active }">
-                <div class="loading-animation">
-                    <div class="circle"></div><div class="circle"></div><div class="circle"></div>
-                    <div class="shadow"></div><div class="shadow"></div><div class="shadow"></div>
-                </div>
-            </div>
-        `
-    });
-    loadingApp = app;
-    app.mount(mount);
+    if (!mount) return;
+    mount.querySelector('.loading-container')?.classList.add('fade-out');
+    setTimeout(() => mount.remove(), 600); // 与 .loading-container 的 0.5s 过渡对齐
+}
+
+function initLoadingScreen() {
+    document.addEventListener('app-ready', dismissLoadingScreen, { once: true });
+    setTimeout(dismissLoadingScreen, 4000);
 }
 
 
 /* ===== Lazy third-party libs (依 config 按需加载，未启用的组件不下载) ===== */
+/* 镜像按顺序故障转移：cdn.jsdelivr.net 在部分网络环境会被直接阻断 */
+const CDN_MIRRORS = [
+    'https://gcore.jsdelivr.net/npm/',
+    'https://testingcf.jsdelivr.net/npm/',
+    'https://unpkg.com/'
+];
 const LAZY_LIBS = {
-    twikoo: 'https://cdn.jsdelivr.net/npm/twikoo@1.6.41/dist/twikoo.min.js',
-    aplayerCss: 'https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css',
-    aplayer: 'https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js',
-    meting: 'https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js'
+    twikoo: 'twikoo@1.6.41/dist/twikoo.min.js',
+    aplayerCss: 'aplayer@1.10.1/dist/APlayer.min.css',
+    aplayer: 'aplayer@1.10.1/dist/APlayer.min.js',
+    meting: 'meting@2.0.1/dist/Meting.min.js'
 };
 
-function loadScript(src) {
+function loadAsset(kind, path, timeoutMs = 8000, attrs = null) {
+    const isCss = kind === 'css';
     return new Promise((resolve, reject) => {
-        const el = document.createElement('script');
-        el.src = src;
-        el.onload = resolve;
-        el.onerror = reject;
-        document.body.appendChild(el);
+        let mirror = 0;
+        const attempt = () => {
+            if (mirror >= CDN_MIRRORS.length) { reject(new Error('All CDN mirrors failed: ' + path)); return; }
+            const url = CDN_MIRRORS[mirror++] + path;
+            const el = isCss ? document.createElement('link') : document.createElement('script');
+            if (attrs) Object.keys(attrs).forEach(key => el.setAttribute(key, attrs[key]));
+            if (isCss) { el.rel = 'stylesheet'; el.href = url; }
+            else { el.src = url; el.defer = true; }
+            let settled = false;
+            const timer = setTimeout(() => { if (settled) return; settled = true; el.remove(); attempt(); }, timeoutMs);
+            el.onload = () => { if (settled) return; settled = true; clearTimeout(timer); resolve(el); };
+            el.onerror = () => { if (settled) return; settled = true; clearTimeout(timer); el.remove(); attempt(); };
+            (isCss ? document.head : document.body).appendChild(el);
+        };
+        attempt();
     });
 }
 
-function loadStylesheet(href) {
-    return new Promise((resolve, reject) => {
-        const el = document.createElement('link');
-        el.rel = 'stylesheet';
-        el.href = href;
-        el.onload = resolve;
-        el.onerror = reject;
-        document.head.appendChild(el);
-    });
-}
+function loadScript(path) { return loadAsset('js', path); }
+function loadStylesheet(path) { return loadAsset('css', path); }
 
 let twikooReadyResolve, playerReadyResolve;
 const twikooReady = new Promise(res => { twikooReadyResolve = res; });
@@ -1650,7 +1737,7 @@ Object.assign(window, {
 initDarkMode();
 
 document.addEventListener('DOMContentLoaded', () => {
-    renderLoadingApp();
+    initLoadingScreen();
     initClock();
     initStaticEvents();
     loadConfigs().then(([config, navData]) => {

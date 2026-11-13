@@ -16,12 +16,12 @@
     <meta property="og:locale" content="zh_CN">
     <title>Fuling Chen - 个人主页</title>
     
-    <!-- 预连接外部资源 -->
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <!-- 预连接外部资源（cdn.jsdelivr.net 在部分网络下不可达，统一改用可用镜像） -->
     <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://testingcf.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://sdk.jinrishici.com" crossorigin>
-    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
     <link rel="dns-prefetch" href="https://gcore.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://testingcf.jsdelivr.net">
     <link rel="dns-prefetch" href="https://sdk.jinrishici.com">
     
     <!-- 核心样式 -->
@@ -30,10 +30,10 @@
         href="https://gcore.jsdelivr.net/gh/0fuling0/mysource@main/img/favicon.webp">
     
     <!-- 延迟加载的外部资源 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://gcore.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" media="print" onload="this.media='all'" onerror="this.onerror=null;this.href='https://testingcf.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css'">
 
     <!-- 预连接 -->
-    <link rel="dns-prefetch" href="https://npm.onmicrosoft.cn">
+    <link rel="dns-prefetch" href="https://unpkg.com">
     <link rel="preload" href="config.json" as="fetch">
     <link rel="preload" href="nav.json" as="fetch">
     <link rel="preload" href="https://gcore.jsdelivr.net/gh/0fuling0/mysource@main/fonts/LXGWWenKaiGBScreen.woff2" as="font" type="font/woff2" crossorigin>
@@ -44,7 +44,9 @@
     <script defer src="https://sdk.jinrishici.com/v2/browser/jinrishici.js" charset="utf-8"></script>
 
     <!-- 延迟加载的脚本（评论 Twikoo、音乐 APlayer/Meting 由 main.js 依 config 按需加载） -->
-    <script defer src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
+    <!-- Vue 本地托管：不再依赖 CDN，避免 jsdelivr 被阻断时主页完全不渲染 -->
+    <script defer src="vendor/vue.global.prod.js"
+        onerror="this.onerror=null;this.src='https://gcore.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js'"></script>
     
     <script>
         const root = document.documentElement;
@@ -65,7 +67,7 @@
             window.location.replace(directoryUrl.href);
         }
     </script>
-    <script defer src="main.js?v=20260912k"></script>
+    <script defer src="main.js?v=20261113a"></script>
 </head>
 
 <body>
@@ -74,7 +76,15 @@
            图片地址与 config.json backgroundImages.images[0] 保持一致。 */
         document.body.style.background = '#10141f center / cover no-repeat url("img/ComfyUI_00122_.webp")';
     </script>
-    <div id="loading-app"></div>
+    <!-- 加载动画直接静态渲染：不依赖 Vue/CDN，第三方脚本异常时也能正常显示并及时淡出 -->
+    <div id="loading-app">
+        <div class="loading-container">
+            <div class="loading-animation">
+                <div class="circle"></div><div class="circle"></div><div class="circle"></div>
+                <div class="shadow"></div><div class="shadow"></div><div class="shadow"></div>
+            </div>
+        </div>
+    </div>
     <!-- 静态 header/footer：与 Vue 模板同构，避免异步挂载时内容推移（Vue 挂载后原位替换） -->
     <header id="header-app">
         <div class="header-content">
